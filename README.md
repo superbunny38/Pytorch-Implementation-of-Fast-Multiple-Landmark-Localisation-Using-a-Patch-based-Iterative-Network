@@ -1,5 +1,5 @@
 # Pytorch-Implementation-of-Fast-Multiple-Landmark-Localisation-Using-a-Patch-based-Iterative-Network
-by Chaeeun Ryu
+*by Chaeeun Ryu*
 
 **Not official!** <br>
 - Official Code Repository in Tensorflow: https://github.com/yuanwei1989/landmark-detection <br>
