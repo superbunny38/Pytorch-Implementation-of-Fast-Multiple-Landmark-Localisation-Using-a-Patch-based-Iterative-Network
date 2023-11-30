@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import shape_model_func
+from utils import shape_model_func, input_data
 global args
 
 parser = argparse.ArgumentParser(description='Argparse')
@@ -13,6 +13,7 @@ parser.add_argument('--box_size', type=float, default=101, help='Patch size (sho
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmark points')
 parser.add_argument('--drop_out', type=float, default=0.5, help='Dropout rate')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
+parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of the input data')
 args = parser.parse_args()
 
                     
@@ -40,6 +41,9 @@ class Config(object):
     save_interval = 25000   # Number of steps in between saving each model
     batch_size = args.batch_size        # Training batch size
     dropout = args.drop_out        # Dropout rate
+    
+    #Newly added by Chaeun Ryu
+    dimension = args.dimension     # Dimensionality of the input data
 
 def print_config(config):
     print("\n\n\n\n========= Configuration Info. =========")
@@ -78,7 +82,13 @@ def main():
     print("================[Starting training]================")
     print("Loading shape model...")
     shape_model = shape_model_func.load_shape_model(config.shape_model_file, config.eigvec_per)
+    num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
     
+    print("load data...")
+    
+    #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
+    #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
+    #Loss = loss(cord_1, cord_2,..., cord_30)
     
 if __name__ == '__main__':
     main()
