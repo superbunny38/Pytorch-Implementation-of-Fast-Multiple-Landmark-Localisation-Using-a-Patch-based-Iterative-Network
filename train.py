@@ -11,6 +11,7 @@ parser.add_argument('--alpha', type=float, default=0.5, help='Weighting given to
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Baseline learning rate')
 parser.add_argument('--box_size', type=float, default=101, help='Patch size (should be odd number)')
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmark points')
+parser.add_argument('--drop_out', type=float, default=0.5, help='Dropout rate')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 args = parser.parse_args()
 
@@ -34,11 +35,11 @@ class Config(object):
     resume = False          # Whether to train from scratch or resume previous training
     box_size = args.box_size          # patch size (odd number)
     alpha = args.alpha             # Weighting given to the loss (0<=alpha<=1). loss = alpha*loss_c + (1-alpha)*loss_r
-    learning_rate = 0.001
+    learning_rate = args.learning_rate  # Baseline learning rate
     max_steps = 100000      # Number of steps to train
     save_interval = 25000   # Number of steps in between saving each model
-    batch_size = 64         # Training batch size
-    dropout = 0.5
+    batch_size = args.batch_size        # Training batch size
+    dropout = args.drop_out        # Dropout rate
 
 def print_config(config):
     print("\n\n\n\n========= Configuration Info. =========")
