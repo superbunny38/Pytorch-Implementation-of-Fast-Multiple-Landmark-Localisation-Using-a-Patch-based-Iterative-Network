@@ -1,7 +1,8 @@
+#ref: https://github.com/yuanwei1989/landmark-detection/blob/
 import os
 import numpy as np
 import argparse
-
+from utils import shape_model_func
 global args
 
 parser = argparse.ArgumentParser(description='Argparse')
@@ -75,7 +76,7 @@ def main():
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("Loading shape model...")
-
+    shape_model = shape_model_func.load_shape_model(config.shape_model_file, config.eigvec_per)
     
     
 if __name__ == '__main__':
