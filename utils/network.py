@@ -10,27 +10,27 @@ class cnn(nn.Module):
         self.keep_prob = prob
         self.conv1_1_pool = nn.Sequential(
             nn.Conv2d(in_channels=30, out_channels=32, kernel_size=3, stride=1),
-            nn.MaxPool2d(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
         self.conv2_1_pool = nn.Sequential(
             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1),
-            nn.MaxPool2d(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
         self.conv3_1_pool = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-            nn.MaxPool2d(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
         self.conv4_1_pool = nn.Sequential(
             nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1),
-            nn.MaxPool2d(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
         self.conv5_1_pool = nn.Sequential(
             nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1),
-            nn.MaxPool2d(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
         
