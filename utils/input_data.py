@@ -60,11 +60,13 @@ def extract_label(filename):
     Returns:
         labels: a 2D float64 numpy array. [landmark_count, 3]
     """
+    print("filename in extract_label: {}".format(filename))
+    labels = []
     with open(filename) as f:
-        labels = np.empty([0, 3], dtype=np.float64)
         for line in f:
-            labels = np.vstack((labels, map(float, line.split())))
-    return labels
+            # labels = np.vstack((labels, map(float, line.split())))
+            labels.append(list(map(float, line.split())))
+    return np.array(labels, dtype=np.float64)
     
 
 def get_file_list(txt_file):
@@ -82,30 +84,41 @@ def get_file_list(txt_file):
     return filenames
 
 
-def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant):
+def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant = []):
     #원래는 여기서 data compression이 진행됨..
+    
+    '''
+    Returns:
+    filenames: list of patient id names
+    images: list of img_count 4D numpy arrays with dimensions=[width, height, depth, 1]. Eg. [324, 207, 279, 1]
+    labels: landmarks coordinates [img_count, landmark_count, 3]
+    shape_params: PCA shape parameters [img_count, shape_param_count] <- compression하기 위한 용도
+    pix_dim: mm of each voxel. [img_count, 3]
+    '''
     
     file_names = get_file_list(file_list)
     file_count = len(file_names)
     images = []
     labels = np.zeros((file_count, landmark_count, 3),dtype=np.float64)
+    
+    # print("labels shape: {}".format(labels.shape))
     pix_dim = np.zeros((file_count,3))
     
-    for i in range(len(file_names)):
+    for i in range(len(file_names)):#하나의 iteration마다 하나의 데이터 pair 처리함
         file_name = file_names[i]
         #load image
         img, pix_dim[i] = extract_image(os.path.join(data_dir, file_name+'.nii.gz'))
         #load landmarks
-        label = extract_label(os.path.join(label_dir, filename+'_ps.txt'))
+        label = extract_label(os.path.join(label_dir, file_name+'_ps.txt'))
         
         #Store extracted data
         images.append(np.expand_dims(img,axis=3))
         labels[i,:,:] = label
     
-    return filenames, images, labels, pix_dim
+    return file_names, images, labels, pix_dim
     
-
-def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark_count,landmark_unwant,shape_model):
+#config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant
+def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,dimension, landmark_count,landmark_unwant):
     """Load training and test dataset.
 
     Args:
@@ -122,6 +135,7 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark
 
     """
     print(">>Loading train (& val) images...")
+    
     train_names, train_images, train_labels, train_pix_dim = extract_all_image_and_label(train_list_file,data_dir,
                                                                                                             label_dir,
                                                                                                             landmark_count,

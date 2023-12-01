@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import autoencoder, input_data
+from utils import autoencoder, input_data, network
 global args
 from tqdm.notebook import tqdm
 import glob
@@ -32,7 +32,9 @@ class Config(object):
     data_dir = './data/Images'
     label_dir = './data/Landmarks'
     train_list_file = './data/list_train.txt'
+    assert os.path.exists(train_list_file) == True, print("train_list_file does not exist")    
     test_list_file = './data/list_test.txt'
+    assert os.path.exists(test_list_file) == True, print("test_list_file does not exist")
     log_dir = './logs'
     model_dir = './cnn_model'
     # Shape model parameters
@@ -113,22 +115,29 @@ def main():
         print_config(config)
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
-    print("\n\nLoading shape model... (=conv autoencoder)")
+    print("\n\nLoading shape model(=conv autoencoder) and PIN... ")
+    
+    num_cnn_output_c, num_cnn_output_r = 2*config.landmark_count*config.dimension, config.landmark_count*config.dimension
     shape_model = autoencoder.load_model(config.device)
-    num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
+    model = network.cnn(num_cnn_output_c, num_cnn_output_r)
+    model.to(config.device)
+    shape_model.to(config.device)
+    # print("landmark_count: {}".format(config.landmark_count))
     print(">>successful!")
     print("\n\nLoading data...")
     data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     print(">>successful!")
     
-    #Define Loss
+    #Define Loss for training
     criterions = dict()
     criterions['cls'] = nn.CrossEntropyLoss()
     criterions['reg'] = nn.MSELoss()
     
+    #Define Loss for autoencoder
+    
     #Define Optimizer
-    optimizer = optim.Adam()
-    oprimizer_autoencoder = optim.Adam(shape_model.parameters(), lr = config.learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
+    oprimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate)
     
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
