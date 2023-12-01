@@ -37,49 +37,49 @@ class CTPDataset(torch.utils.data.Dataset):
 def extract_image(filename):
     """Extract the image into a 3D numpy array [x, y, z].
 
-  Args:
-    filename: Path and name of nifti file.
+    Args:
+        filename: Path and name of nifti file.
 
-  Returns:
-    data: A 3D numpy array [x, y, z]
-    pix_dim: pixel spacings
+    Returns:
+        data: A 3D numpy array [x, y, z]
+        pix_dim: pixel spacings
 
-  """
-  img = nib.load(filename)
-  data = np.array(img.dataobj)#img.get_data()
-  data[np.isnan(data)] = 0
-  pix_dim = np.array(img.header.get_zooms())
-  return data, pix_dim
+    """
+    img = nib.load(filename)
+    data = np.array(img.dataobj)#img.get_data()
+    data[np.isnan(data)] = 0
+    pix_dim = np.array(img.header.get_zooms())
+    return data, pix_dim
 
 def extract_label(filename):
     """Extract the labels (landmark coordinates) into a 2D float64 numpy array.
 
-  Args:
-    filename: Path and name of txt file containing the landmarks. One row per landmark.
+    Args:
+        filename: Path and name of txt file containing the landmarks. One row per landmark.
 
-  Returns:
-    labels: a 2D float64 numpy array. [landmark_count, 3]
-  """
-  with open(filename) as f:
-    labels = np.empty([0, 3], dtype=np.float64)
-    for line in f:
-      labels = np.vstack((labels, map(float, line.split())))
-  return labels
-  
+    Returns:
+        labels: a 2D float64 numpy array. [landmark_count, 3]
+    """
+    with open(filename) as f:
+        labels = np.empty([0, 3], dtype=np.float64)
+        for line in f:
+            labels = np.vstack((labels, map(float, line.split())))
+    return labels
+    
 
 def get_file_list(txt_file):
-  """Get a list of filenames
+    """Get a list of filenames
 
-  Args:
-    txt_file: Name of a txt file containing a list of filenames for the images.
+    Args:
+        txt_file: Name of a txt file containing a list of filenames for the images.
 
-  Returns:
-    filenames: A list of filenames for the images.
+    Returns:
+        filenames: A list of filenames for the images.
 
-  """
-  with open(txt_file) as f:
-    filenames = f.read().splitlines()
-  return filenames
+    """
+    with open(txt_file) as f:
+        filenames = f.read().splitlines()
+    return filenames
 
 
 def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant):
@@ -108,36 +108,35 @@ def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, 
 def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark_count,landmark_unwant,shape_model):
     """Load training and test dataset.
 
-  Args:
-    data_dir: Directory storing images.
-    label_dir: Directory storing labels.
-    train_list_file: txt file containing list of filenames for train images
-    test_list_file: txt file containing list of filenames for test images
-    landmark_count: Number of landmarks used (unwanted landmarks removed)
-    landmark_unwant: list of unwanted landmark indices
-    shape_model: structure storing the shape model
+    Args:
+        data_dir: Directory storing images.
+        label_dir: Directory storing labels.
+        train_list_file: txt file containing list of filenames for train images
+        test_list_file: txt file containing list of filenames for test images
+        landmark_count: Number of landmarks used (unwanted landmarks removed)
+        landmark_unwant: list of unwanted landmark indices
+        shape_model: structure storing the shape model
 
-  Returns:
-    data: A collections.namedtuple containing fields ['train', 'validation', 'test']
+    Returns:
+        data: A collections.namedtuple containing fields ['train', 'validation', 'test']
 
-  """
-  print(">>Loading train (& val) images...")
-  train_names, train_images, train_labels, train_pix_dim = extract_all_image_and_label(train_list_file,
-                                                                                                           data_dir,
-                                                                                                           label_dir,
-                                                                                                           landmark_count,
-                                                                                                           landmark_unwant,
-                                                                                                           shape_model)
-  
-  print(">>Loading test images...")
-  test_names, test_images, test_labels, test_pix_dim = extract_all_image_and_label(test_list_file,
-                                                                                                      data_dir,
-                                                                                                      label_dir,
-                                                                                                      landmark_count,
-                                                                                                      landmark_unwant,
-                                                                                                      shape_model)
-  
-  
-  train_dataset = CTPDataset(train_names, train_images, train_labels, train_pix_dim)
-  test_dataset = CTPDataset(test_names, test_images, test_labels, test_pix_dim)
-  return train_dataset, test_dataset
+    """
+    print(">>Loading train (& val) images...")
+    train_names, train_images, train_labels, train_pix_dim = extract_all_image_and_label(train_list_file,data_dir,
+                                                                                                            label_dir,
+                                                                                                            landmark_count,
+                                                                                                            landmark_unwant,
+                                                                                                            )
+    
+    print(">>Loading test images...")
+    test_names, test_images, test_labels, test_pix_dim = extract_all_image_and_label(test_list_file,
+                                                                                                        data_dir,
+                                                                                                        label_dir,
+                                                                                                        landmark_count,
+                                                                                                        landmark_unwant,
+                                                                                                        )
+    
+    
+    train_dataset = CTPDataset(train_names, train_images, train_labels, train_pix_dim)
+    test_dataset = CTPDataset(test_names, test_images, test_labels, test_pix_dim)
+    return train_dataset, test_dataset

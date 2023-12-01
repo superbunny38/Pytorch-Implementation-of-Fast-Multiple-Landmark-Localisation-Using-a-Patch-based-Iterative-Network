@@ -86,7 +86,7 @@ def print_config(config):
     
     
 
-def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config = config):
+def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config):
     cls_loss = []
     reg_loss = []
     model.to(device)
@@ -99,7 +99,7 @@ def train_epoch(epoch, train_loader, model, criterions, optimizer, device, confi
     
     return np.mean(cls_loss), np.mean(reg_loss)
 
-def train(num_epochs,train_loader, model, criterions, optimizer, device, config = config):
+def train(num_epochs,train_loader, model, criterions, optimizer, device, config):
     save_train_loss = {"cls":[], "reg":[]}
     save_val_loss = {"cls":[], "reg":[]}
     
@@ -113,18 +113,22 @@ def main():
         print_config(config)
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
-    print("Loading shape model... (=conv autoencoder)")
+    print("\n\nLoading shape model... (=conv autoencoder)")
     shape_model = autoencoder.load_model(config.device)
     num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
-    
-    print("Loading data...")
+    print(">>successful!")
+    print("\n\nLoading data...")
     data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
+    print(">>successful!")
     
-    
-    #Loss define
+    #Define Loss
     criterions = dict()
     criterions['cls'] = nn.CrossEntropyLoss()
     criterions['reg'] = nn.MSELoss()
+    
+    #Define Optimizer
+    optimizer = optim.Adam()
+    oprimizer_autoencoder = optim.Adam(shape_model.parameters(), lr = config.learning_rate)
     
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
@@ -132,4 +136,5 @@ def main():
     #Loss = loss(cord_1, cord_2,..., cord_30)
     
 if __name__ == '__main__':
+    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     main()
