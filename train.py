@@ -25,6 +25,7 @@ parser.add_argument('--print_config', type=bool, default=False, help='Whether to
 parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of the input data')
 parser.add_argument('--device_id', type=int, default=0, help='Device ID')
 parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
+parser.add_argument('--write_log', type=bool, default=True, help='Whether to write the experiment log')
 args = parser.parse_args()
 
                     
@@ -58,14 +59,14 @@ class Config(object):
     #Newly added by Chaeun Ryu
     dimension = args.dimension     # Dimensionality of the input data
     device = torch.device("cuda:{}".format(args.device_id)) if torch.cuda.is_available() else torch.device("cpu")
+    write_log = args.write_log
 
 
 
 def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models):
     img_count = len(images)
     
-    return patches, actions, dbs, bs
-        
+    return
 
 def main():
     config = Config()
@@ -107,20 +108,20 @@ def main():
     optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
     
-    for i in range(config.max_steps):
-        patches_train, actions_train, dbs_train, _ = get_train_pairs(config.batch_size,
-                                                                     train_dataset.images,
-                                                                     config,
-                                                                     num_cnn_output_c,
-                                                                     num_cnn_output_r,
-                                                                     models)
+    for step_i in tqdm(range(config.max_steps), desc='Training...'):
+        get_train_pairs(config.batch_size,
+                        train_dataset.images,
+                        config,
+                        num_cnn_output_c,
+                        num_cnn_output_r,
+                        models)
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
 
 
-
 if __name__ == '__main__':
     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     main()
+    print("Successfully finished!")
