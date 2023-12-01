@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import shape_model_func, input_data
+from utils import autoencoder, input_data
 global args
 from tqdm.notebook import tqdm
 import glob
@@ -22,6 +22,7 @@ parser.add_argument('--landmark_count', type=int, default=2, help='Number of lan
 parser.add_argument('--drop_out', type=float, default=0.5, help='Dropout rate')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of the input data')
+parser.add_argument('--device_id',type=int, default=0, help='Device ID')
 args = parser.parse_args()
 
                     
@@ -52,6 +53,7 @@ class Config(object):
     
     #Newly added by Chaeun Ryu
     dimension = args.dimension     # Dimensionality of the input data
+    device = torch.device("cuda:{}".format(args.device_id)) if torch.cuda.is_available() else torch.device("cpu")
 
 def print_config(config):
     print("\n\n\n\n========= Configuration Info. =========")
@@ -70,7 +72,7 @@ def print_config(config):
     print("landmark_count: {}".format(config.landmark_count))
     print("landmark_unwant: {}".format(config.landmark_unwant))
     
-    print("\n=======Training parameters=======")
+    print("\n=======Experiment parameters=======")
     print("resume: {}".format(config.resume))
     print("box_size (patch size (odd number)): {}".format(config.box_size))
     print("alpha: {}".format(config.alpha))
@@ -79,7 +81,10 @@ def print_config(config):
     print("save_interval: {}".format(config.save_interval))
     print("batch_size: {}".format(config.batch_size))
     print("dropout: {}".format(config.dropout))
+    print("running on device: {}".format(config.device))
     print("=====================================\n\n\n\n")
+    
+    
 
 def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config = config):
     cls_loss = []
@@ -108,8 +113,8 @@ def main():
         print_config(config)
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
-    print("Loading shape model...")
-    
+    print("Loading shape model... (=conv autoencoder)")
+    shape_model = autoencoder.load_model(config.device)
     num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
     
     print("Loading data...")

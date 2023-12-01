@@ -4,7 +4,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ConvAutoencoder(nn.Module):
+class ConvAutoencoder(nn.Module):#아직 input shape 안 맞춤
     def __init__(self):
         super(ConvAutoencoder, self).__init__()
         self.encoder = nn.Sequential(
@@ -38,6 +38,9 @@ class ConvAutoencoder(nn.Module):
         reconstructed = F.sigmoid(self.decoder(compressed))
         return compressed, reconstructed
 
+def load_model(device):
+    autoencoder = ConvAutoencoder().to(device)
+    return autoencoder
 
 def landmarks2b(landmarks, autoencoder, device):
     """
