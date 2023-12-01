@@ -4,6 +4,14 @@ import numpy as np
 import argparse
 from utils import shape_model_func, input_data
 global args
+from tqdm.notebook import tqdm
+import glob
+
+### Pytorch
+import torch
+import torch.nn as nn
+import torch.optim
+
 
 parser = argparse.ArgumentParser(description='Argparse')
 parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
@@ -73,7 +81,7 @@ def print_config(config):
     print("dropout: {}".format(config.dropout))
     print("=====================================\n\n\n\n")
 
-def train_epoch(epoch, train_loader, model, criterion, optimizer, device):
+def train_epoch(epoch, train_loader, model, criterion, optimizer, device, config = config):
     losses = []
     model.to(device)
     model.train()
@@ -85,6 +93,13 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, device):
     
     return np.mean(losses)
 
+def train(num_epochs,train_loader, model, criterions, optimizer, device, config = config):
+    save_train_loss = []
+    save_val_loss = []
+    
+    for epoch in tqdm(range(num_epochs)):
+        train_loss = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
+    
 
 def main():
     config = Config()
@@ -98,6 +113,12 @@ def main():
     
     print("Loading data...")
     data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant,shape_model)
+    
+    
+    #Loss define
+    criterions = dict()
+    criterions['cls'] = nn.CrossEntropyLoss()
+    criterions['reg'] = nn.MSELoss()
     
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
