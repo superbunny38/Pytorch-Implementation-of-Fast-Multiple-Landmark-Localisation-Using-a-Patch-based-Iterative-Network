@@ -80,6 +80,8 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, device):
     
     for image, label in train_loader:
         image, label = image.to(device), label.to(device)
+        cls_out, reg_out = model(image)
+        
     
     return np.mean(losses)
 
