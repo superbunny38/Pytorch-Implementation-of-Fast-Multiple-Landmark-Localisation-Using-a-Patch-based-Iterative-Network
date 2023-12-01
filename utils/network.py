@@ -1,4 +1,5 @@
 #ref: https://github.com/yuanwei1989/landmark-detection/blob/master/utils/network.py 
+#paper arxiv: https://arxiv.org/abs/1806.06987v2
 #written in Pytorch by Chaeeun Ryu
 
 import torch.nn as nn

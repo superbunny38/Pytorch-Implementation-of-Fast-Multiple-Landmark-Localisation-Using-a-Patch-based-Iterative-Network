@@ -4,4 +4,4 @@
 **Not official!** <br>
 - Official Code Repository in Tensorflow: https://github.com/yuanwei1989/landmark-detection <br>
 - Official paper: https://arxiv.org/pdf/1806.06987.pdf 
-
+- paper arxiv: https://arxiv.org/abs/1806.06987v2
