@@ -3,27 +3,33 @@ import numpy as np
 import torch
 import nibabel as nib
 
-class DataSet(object):
-  def __init__(self,
-               names,
-               images,
-               labels,
-               shape_params,
-               pix_dim):
-    assert len(images) == labels.shape[0], ('len(images): %s labels.shape: %s' % (len(images), labels.shape))
-    self.num_examples = len(images)
-    self.names = names
-    self.images = images
-    self.labels = labels
-    self.shape_params = shape_params
-    self.pix_dim = pix_dim
+# class DataSet(object):
+#   def __init__(self,
+#                names,
+#                images,
+#                labels,
+#                shape_params,
+#                pix_dim):
+#     assert len(images) == labels.shape[0], ('len(images): %s labels.shape: %s' % (len(images), labels.shape))
+#     self.num_examples = len(images)
+#     self.names = names
+#     self.images = images
+#     self.labels = labels
+#     self.shape_params = shape_params
+#     self.pix_dim = pix_dim
 
 class CTPDataset(torch.utils.data.Dataset):
-    def __init__(self):
-        pass
+    def __init__(self, names, images, labels, shape_params, pix_dim):
+        assert len(images) == labels.shape[0], ('len(images): %s labels.shape: %s' % (len(images), labels.shape))
+        self.num_examples = len(images)
+        self.names = names
+        self.images = images
+        self.labels = labels
+        self.shape_params = shape_params
+        self.pix_dim = pix_dim
 
     def __len__(self):
-        pass
+        return self.num_examples
     
     def __getitem__(self, index):
         pass
@@ -62,5 +68,22 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark
     data: A collections.namedtuple containing fields ['train', 'validation', 'test']
 
   """
+  print(">>Loading train (& val) images...")
+  train_names, train_images, train_labels, train_shape_params, train_pix_dim = extract_all_image_and_label(train_list_file,
+                                                                                                           data_dir,
+                                                                                                           label_dir,
+                                                                                                           landmark_count,
+                                                                                                           landmark_unwant,
+                                                                                                           shape_model)
+  
+  print(">>Loading test images...")
+  test_names, test_images, test_labels, test_shape_params, test_pix_dim = extract_all_image_and_label(test_list_file,
+                                                                                                      data_dir,
+                                                                                                      label_dir,
+                                                                                                      landmark_count,
+                                                                                                      landmark_unwant,
+                                                                                                      shape_model)
+  
+  
   
   return
