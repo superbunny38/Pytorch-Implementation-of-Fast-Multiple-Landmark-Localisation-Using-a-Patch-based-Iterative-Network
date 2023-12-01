@@ -84,7 +84,9 @@ def main():
     shape_model = shape_model_func.load_shape_model(config.shape_model_file, config.eigvec_per)
     num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
     
-    print("load data...")
+    print("Loading data...")
+    data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant,shape_model)
+    
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
