@@ -73,6 +73,15 @@ def print_config(config):
     print("dropout: {}".format(config.dropout))
     print("=====================================\n\n\n\n")
 
+def train_epoch(epoch, train_loader, model, criterion, optimizer, device):
+    losses = []
+    model.to(device)
+    model.train()
+    
+    for image, label in train_loader:
+        image, label = image.to(device), label.to(device)
+    
+    return np.mean(losses)
 
 
 def main():
