@@ -22,7 +22,8 @@ parser.add_argument('--landmark_count', type=int, default=2, help='Number of lan
 parser.add_argument('--drop_out', type=float, default=0.5, help='Dropout rate')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of the input data')
-parser.add_argument('--device_id',type=int, default=0, help='Device ID')
+parser.add_argument('--device_id', type=int, default=0, help='Device ID')
+parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
 args = parser.parse_args()
 
                     
@@ -48,7 +49,7 @@ class Config(object):
     box_size = args.box_size          # patch size (odd number)
     alpha = args.alpha             # Weighting given to the loss (0<=alpha<=1). loss = alpha*loss_c + (1-alpha)*loss_r
     learning_rate = args.learning_rate  # Baseline learning rate
-    max_steps = 100000      # Number of steps to train
+    max_steps = args.max_steps      # Number of steps to train
     save_interval = 25000   # Number of steps in between saving each model
     batch_size = args.batch_size        # Training batch size
     dropout = args.drop_out        # Dropout rate
@@ -88,26 +89,31 @@ def print_config(config):
     
     
 
-def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config):
-    cls_loss = []
-    reg_loss = []
-    model.to(device)
-    model.train()
+# def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config):
+#     cls_loss = []
+#     reg_loss = []
+#     model.to(device)
+#     model.train()
     
-    for image, label in train_loader:
-        image, label = image.to(device), label.to(device)
-        cls_out, reg_out = model(image)
+#     for image, label in train_loader:
+#         image, label = image.to(device), label.to(device)
+#         cls_out, reg_out = model(image)
         
     
-    return np.mean(cls_loss), np.mean(reg_loss)
+#     return np.mean(cls_loss), np.mean(reg_loss)
 
-def train(num_epochs,train_loader, model, criterions, optimizer, device, config):
-    save_train_loss = {"cls":[], "reg":[]}
-    save_val_loss = {"cls":[], "reg":[]}
+# def train(num_epochs,train_loader, model, criterions, optimizer, device, config):
+#     save_train_loss = {"cls":[], "reg":[]}
+#     save_val_loss = {"cls":[], "reg":[]}
     
-    for epoch in tqdm(range(num_epochs)):
-        train_loss_cls, train_loss_reg = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
+#     for epoch in tqdm(range(num_epochs)):
+#         train_loss_cls, train_loss_reg = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
+
+def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models, sd):
+    img_count = len(images)
     
+    return patches, actions, dbs, bs
+        
 
 def main():
     config = Config()
@@ -118,10 +124,14 @@ def main():
     print("\n\nLoading shape model(=conv autoencoder) and PIN... ")
     
     num_cnn_output_c, num_cnn_output_r = 2*config.landmark_count*config.dimension, config.landmark_count*config.dimension
+    models = dict()
     shape_model = autoencoder.load_model(config.device)
     model = network.cnn(num_cnn_output_c, num_cnn_output_r)
     model.to(config.device)
     shape_model.to(config.device)
+    models['shape_model'] = shape_model
+    models['model'] = model
+    
     # print("landmark_count: {}".format(config.landmark_count))
     print(">>successful!")
     print("\n\nLoading data...")
@@ -144,6 +154,14 @@ def main():
     optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
     
+    for i in xrange(config.max_steps):
+        patches_train, actions_train, dbs_train, _ = get_train_pairs(config.batch_size,
+                                                                     train_dataset.images,
+                                                                     config,
+                                                                     num_cnn_output_c,
+                                                                     num_cnn_output_r,
+                                                                     models,
+                                                                     confg.sd)
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
