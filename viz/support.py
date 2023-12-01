@@ -26,3 +26,21 @@ def print_config(config):
     print("dropout: {}".format(config.dropout))
     print("running on device: {}".format(config.device))
     print("=====================================\n\n\n\n")
+    
+
+
+def print_info(config):
+    print("\n\n================================")
+    print("Official repository:https://github.com/yuanwei1989/landmark-detection")
+    print("Official arxiv: https://arxiv.org/abs/1806.06987v2")
+    print("Official paper: https://arxiv.org/pdf/1806.06987.pdf ")
+    
+    print()
+    print()
+    print("Writer of this repo: Chaeeun Ryu")
+    print("Modifications made compared to the original repo:")
+    print("1. Replaced the shape model (i.e., PCA) with the convolutional autoencoder")
+    print("2. Wrote code in Pytorch.")
+    print()
+    print("For detailed information about the library versions, please refer to requirements.txt")
+    print("================================)

@@ -28,6 +28,7 @@ parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of 
 parser.add_argument('--device_id', type=int, default=0, help='Device ID')
 parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
 parser.add_argument('--write_log', type=bool, default=True, help='Whether to write the experiment log')
+parser.add_argument('--get_info', type=bool, default=False, help='Whether to get the information of the code')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -66,7 +67,7 @@ class Config(object):
     device = torch.device("cuda:{}".format(args.device_id)) if torch.cuda.is_available() else torch.device("cpu")
     write_log = args.write_log
     learning_rate_ae = args.learning_rate_ae
-
+    get_info = args.get_info
 
 
 def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models):
@@ -79,6 +80,9 @@ def main():
     
     if args.print_config:
         support.print_config(config)
+    if args.get_info:
+        support.print_info(config)
+        
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("\n\nLoading shape model(=conv autoencoder) and PIN... ")
