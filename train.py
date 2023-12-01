@@ -125,25 +125,32 @@ def main():
     # print("landmark_count: {}".format(config.landmark_count))
     print(">>successful!")
     print("\n\nLoading data...")
-    data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
+    train_dataset, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     print(">>successful!")
     
+    print("\n\nLoading Loss and optimizers for shape model and PIN... ")
     #Define Loss for training
     criterions = dict()
     criterions['cls'] = nn.CrossEntropyLoss()
     criterions['reg'] = nn.MSELoss()
-    
+    criterions['autoencoder'] = nn.BCELoss()
     #Define Loss for autoencoder
     
     #Define Optimizer
+    optimizers = dict()
     optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
-    oprimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate)
+    optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate)
+    optimizers['optimizer'] = optimizer
+    optimizers['optimizer_autoencoder'] = optimizer_autoencoder
+    print(">>successful!")
     
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
-    
+
+
+
 if __name__ == '__main__':
     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     main()

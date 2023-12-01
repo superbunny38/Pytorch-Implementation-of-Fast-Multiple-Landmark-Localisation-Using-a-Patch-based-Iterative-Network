@@ -60,7 +60,7 @@ def extract_label(filename):
     Returns:
         labels: a 2D float64 numpy array. [landmark_count, 3]
     """
-    print("filename in extract_label: {}".format(filename))
+    # print("filename in extract_label: {}".format(filename))
     labels = []
     with open(filename) as f:
         for line in f:
@@ -134,7 +134,7 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,dimensio
         data: A collections.namedtuple containing fields ['train', 'validation', 'test']
 
     """
-    print(">>Loading train (& val) images...")
+    # print(">>Loading train (& val) images...")
     
     train_names, train_images, train_labels, train_pix_dim = extract_all_image_and_label(train_list_file,data_dir,
                                                                                                             label_dir,
@@ -142,7 +142,7 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,dimensio
                                                                                                             landmark_unwant,
                                                                                                             )
     
-    print(">>Loading test images...")
+    # print(">>Loading test images...")
     test_names, test_images, test_labels, test_pix_dim = extract_all_image_and_label(test_list_file,
                                                                                                         data_dir,
                                                                                                         label_dir,
