@@ -69,6 +69,13 @@ def get_file_list(txt_file):
 
 def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant):
     file_names = get_file_list(file_list)
+    file_count = len(file_names)
+    images = []
+    labels = np.zeros((file_count, landmark_count, 3),dtype=np.float64)
+    pix_dim = np.zeros((file_count,3))
+    
+    return filenames, images, labels, shape_params, pix_dim
+    
 
 def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark_count,landmark_unwant,shape_model):
     """Load training and test dataset.
