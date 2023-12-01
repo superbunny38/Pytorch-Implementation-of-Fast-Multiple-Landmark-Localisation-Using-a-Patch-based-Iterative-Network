@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import torch
 import nibabel as nib
 
 class DataSet(object):
@@ -16,6 +17,16 @@ class DataSet(object):
     self.labels = labels
     self.shape_params = shape_params
     self.pix_dim = pix_dim
+
+class CTPDataset(torch.utils.data.Dataset):
+    def __init__(self):
+        pass
+
+    def __len__(self):
+        pass
+    
+    def __getitem__(self, index):
+        pass
 
 def extract_image(filename):
     """Extract the image into a 3D numpy array [x, y, z].

@@ -72,7 +72,8 @@ def print_config(config):
     print("batch_size: {}".format(config.batch_size))
     print("dropout: {}".format(config.dropout))
     print("=====================================\n\n\n\n")
-    
+
+
 
 def main():
     config = Config()
