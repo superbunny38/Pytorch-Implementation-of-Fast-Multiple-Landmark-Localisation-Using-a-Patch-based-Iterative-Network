@@ -1,4 +1,6 @@
 # Autoencoder to replace the shape model
+# Multi landmarkds detection인 경우 landmarks만 pca로 차원축소한다는 것 같음
+
 import torch.nn as nn
 import torch.nn.functional as F
 
