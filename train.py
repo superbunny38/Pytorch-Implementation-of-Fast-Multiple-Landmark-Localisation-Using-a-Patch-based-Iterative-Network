@@ -31,7 +31,7 @@ class Config(object):
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
     sd = 3.0                # Standard deviation of shape parameters
     landmark_count = args.landmark_count     # Number of landmarks
-    landmark_unwant = [0, 8, 9, 13, 14, 15]     # list of unwanted landmark indices
+    landmark_unwant = []#[0, 8, 9, 13, 14, 15]     # list of unwanted landmark indices
     # Training parameters
     resume = False          # Whether to train from scratch or resume previous training
     box_size = args.box_size          # patch size (odd number)

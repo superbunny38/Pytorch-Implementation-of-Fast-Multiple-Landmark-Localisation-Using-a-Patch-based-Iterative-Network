@@ -17,6 +17,24 @@ class DataSet(object):
     self.shape_params = shape_params
     self.pix_dim = pix_dim
 
+def extract_image(filename):
+    """Extract the image into a 3D numpy array [x, y, z].
+
+  Args:
+    filename: Path and name of nifti file.
+
+  Returns:
+    data: A 3D numpy array [x, y, z]
+    pix_dim: pixel spacings
+
+  """
+  img = nib.load(filename)
+  data = np.array(img.dataobj)#img.get_data()
+  data[np.isnan(data)] = 0
+  pix_dim = np.array(img.header.get_zooms())
+  return data, pix_dim
+  
+
 def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark_count,landmark_unwant,shape_model):
     """Load training and test dataset.
 
