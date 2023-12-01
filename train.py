@@ -109,11 +109,11 @@ def main():
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("Loading shape model...")
-    shape_model = shape_model_func.load_shape_model(config.shape_model_file, config.eigvec_per)
+    
     num_cnn_output_c, num_cnn_output_r = 2*args.landmark_count*config.dimension, args.landmark_count*config.dimension
     
     print("Loading data...")
-    data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant,shape_model)
+    data = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     
     
     #Loss define

@@ -52,6 +52,24 @@ def extract_image(filename):
   return data, pix_dim
   
 
+def get_file_list(txt_file):
+  """Get a list of filenames
+
+  Args:
+    txt_file: Name of a txt file containing a list of filenames for the images.
+
+  Returns:
+    filenames: A list of filenames for the images.
+
+  """
+  with open(txt_file) as f:
+    filenames = f.read().splitlines()
+  return filenames
+
+
+def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant):
+    file_names = get_file_list(file_list)
+
 def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark_count,landmark_unwant,shape_model):
     """Load training and test dataset.
 
@@ -83,6 +101,7 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,landmark
                                                                                                       landmark_count,
                                                                                                       landmark_unwant,
                                                                                                       shape_model)
+  
   
   
   
