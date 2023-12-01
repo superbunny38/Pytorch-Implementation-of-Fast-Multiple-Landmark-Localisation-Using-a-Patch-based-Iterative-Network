@@ -15,6 +15,8 @@ import torch.optim
 
 
 parser = argparse.ArgumentParser(description='Argparse')
+
+#PIN
 parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
 parser.add_argument('--alpha', type=float, default=0.5, help='Weighting given to the loss')
 parser.add_argument('--learning_rate', type=float, default=0.001, help='Baseline learning rate')
@@ -26,6 +28,9 @@ parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of 
 parser.add_argument('--device_id', type=int, default=0, help='Device ID')
 parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
 parser.add_argument('--write_log', type=bool, default=True, help='Whether to write the experiment log')
+
+##Autoencoder
+parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
 args = parser.parse_args()
 
                     
@@ -60,6 +65,7 @@ class Config(object):
     dimension = args.dimension     # Dimensionality of the input data
     device = torch.device("cuda:{}".format(args.device_id)) if torch.cuda.is_available() else torch.device("cpu")
     write_log = args.write_log
+    learning_rate_ae = args.learning_rate_ae
 
 
 
@@ -103,7 +109,7 @@ def main():
     #Define Optimizer
     optimizers = dict()
     optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
-    optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate)
+    optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate_ae)
     optimizers['optimizer'] = optimizer
     optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
