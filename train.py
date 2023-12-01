@@ -81,8 +81,9 @@ def print_config(config):
     print("dropout: {}".format(config.dropout))
     print("=====================================\n\n\n\n")
 
-def train_epoch(epoch, train_loader, model, criterion, optimizer, device, config = config):
-    losses = []
+def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config = config):
+    cls_loss = []
+    reg_loss = []
     model.to(device)
     model.train()
     
@@ -91,14 +92,14 @@ def train_epoch(epoch, train_loader, model, criterion, optimizer, device, config
         cls_out, reg_out = model(image)
         
     
-    return np.mean(losses)
+    return np.mean(cls_loss), np.mean(reg_loss)
 
 def train(num_epochs,train_loader, model, criterions, optimizer, device, config = config):
-    save_train_loss = []
-    save_val_loss = []
+    save_train_loss = {"cls":[], "reg":[]}
+    save_val_loss = {"cls":[], "reg":[]}
     
     for epoch in tqdm(range(num_epochs)):
-        train_loss = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
+        train_loss_cls, train_loss_reg = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
     
 
 def main():
