@@ -3,6 +3,7 @@ import os
 import numpy as np
 import argparse
 from utils import autoencoder, input_data, network
+from viz import support
 global args
 from tqdm.notebook import tqdm
 import glob
@@ -58,58 +59,9 @@ class Config(object):
     dimension = args.dimension     # Dimensionality of the input data
     device = torch.device("cuda:{}".format(args.device_id)) if torch.cuda.is_available() else torch.device("cpu")
 
-def print_config(config):
-    print("\n\n\n\n========= Configuration Info. =========")
-    print("\n=======File paths=======")
-    print("data_dir: {}".format(config.data_dir))
-    print("label_dir: {}".format(config.label_dir))
-    print("train_list_file: {}".format(config.train_list_file))
-    print("test_list_file: {}".format(config.test_list_file))
-    print("log_dir: {}".format(config.log_dir))
-    print("model_dir: {}".format(config.model_dir))
-    
-    print("\n=======Shape model parameters=======")
-    print("shape_model_file: {}".format(config.shape_model_file))
-    print("eigvec_per: {}".format(config.eigvec_per))
-    print("sd: {}".format(config.sd))
-    print("landmark_count: {}".format(config.landmark_count))
-    print("landmark_unwant: {}".format(config.landmark_unwant))
-    
-    print("\n=======Experiment parameters=======")
-    print("resume: {}".format(config.resume))
-    print("box_size (patch size (odd number)): {}".format(config.box_size))
-    print("alpha: {}".format(config.alpha))
-    print("learning_rate: {}".format(config.learning_rate))
-    print("max_steps: {}".format(config.max_steps))
-    print("save_interval: {}".format(config.save_interval))
-    print("batch_size: {}".format(config.batch_size))
-    print("dropout: {}".format(config.dropout))
-    print("running on device: {}".format(config.device))
-    print("=====================================\n\n\n\n")
-    
-    
 
-# def train_epoch(epoch, train_loader, model, criterions, optimizer, device, config):
-#     cls_loss = []
-#     reg_loss = []
-#     model.to(device)
-#     model.train()
-    
-#     for image, label in train_loader:
-#         image, label = image.to(device), label.to(device)
-#         cls_out, reg_out = model(image)
-        
-    
-#     return np.mean(cls_loss), np.mean(reg_loss)
 
-# def train(num_epochs,train_loader, model, criterions, optimizer, device, config):
-#     save_train_loss = {"cls":[], "reg":[]}
-#     save_val_loss = {"cls":[], "reg":[]}
-    
-#     for epoch in tqdm(range(num_epochs)):
-#         train_loss_cls, train_loss_reg = train_epoch(epoch, train_loader, model, criterion, optimizer, device)
-
-def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models, sd):
+def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models):
     img_count = len(images)
     
     return patches, actions, dbs, bs
@@ -117,8 +69,9 @@ def get_train_pairs(batch_size, images, config, num_actions, num_regression_outp
 
 def main():
     config = Config()
+    
     if args.print_config:
-        print_config(config)
+        support.print_config(config)
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("\n\nLoading shape model(=conv autoencoder) and PIN... ")
@@ -154,14 +107,13 @@ def main():
     optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
     
-    for i in xrange(config.max_steps):
+    for i in range(config.max_steps):
         patches_train, actions_train, dbs_train, _ = get_train_pairs(config.batch_size,
                                                                      train_dataset.images,
                                                                      config,
                                                                      num_cnn_output_c,
                                                                      num_cnn_output_r,
-                                                                     models,
-                                                                     confg.sd)
+                                                                     models)
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
