@@ -67,3 +67,29 @@ def save_loss_plot(save_losses):
     
 def print_config_inference(config):
     print("\n\n\n\n========= Configuration Info. =========")
+    print("\n=======File paths=======")
+    print("data_dir: {}".format(config.data_dir))
+    print("label_dir: {}".format(config.label_dir))
+    print("train_list_file: {}".format(config.train_list_file))
+    print("test_list_file: {}".format(config.test_list_file))
+    print("model_dir: {}".format(config.model_dir))
+    
+    print("\n=======Shape model parameters=======")
+    print("shape_model_file: {}".format(config.shape_model_file))
+    print("eigvec_per: {}\n".format(config.eigvec_per))
+    print("sd: {}\n".format(config.sd))
+    print("landmark_count: {}\n".format(config.landmark_count))
+    print("landmark_unwant: {}\n".format(config.landmark_unwant))
+    
+    print("\n=======Testing parameters=======")
+    print("box_size (patch size (odd number)): {}".format(config.box_size))
+    print("max_test_steps: {}".format(config.max_test_steps))
+    print("num_random_init: {}".format(config.num_random_init))
+    print("predict_mode: {}".format(config.predict_mode))
+    print("running on device: {}".format(config.device))
+    
+    print("\n=======Visualisation parameters=======")
+    print("save_viz: {}".format(config.save_viz))
+    print("print_config: {}".format(config.print_config))
+    print("=====================================\n\n\n\n")
+    

@@ -8,7 +8,7 @@ parser.add_argument('--num_random_init', type=int, default=5, help='Number of ra
 parse.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.")
 parser.add_argument('--save_viz', type=bool, help='Whether to save visualisation.')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
-
+parser.add_argument('--device', type=str, default='cuda:0', help='Device to run gpu on.')
 args = parser.parse_args()
 
 
@@ -40,6 +40,7 @@ class Config(object):
     
     #Chaeeun parameters
     print_config = args.print_config
+    device = torch.device(f"cuda:{args.device}" if torch.cuda.is_available() else "cpu
     
 
 def main():
