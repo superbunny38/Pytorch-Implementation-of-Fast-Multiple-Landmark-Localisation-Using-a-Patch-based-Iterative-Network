@@ -6,7 +6,7 @@ from utils import input_data, network
 parser = argparse.ArgumentParser(description='Argparse')
 parser.add_argument('--max_test_steps', type=int, default=10, help='Number of inference steps.')
 parser.add_argument('--num_random_init', type=int, default=5, help='Number of random initialisations used.')
-parse.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.")
+parse.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.')
 parser.add_argument('--save_viz', type=bool, help='Whether to save visualisation.')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 parser.add_argument('--device', type=str, default='cuda:0', help='Device to run gpu on.')
