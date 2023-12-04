@@ -7,6 +7,7 @@ from viz import support
 global args
 from tqdm.notebook import tqdm
 import glob
+from datetime import datetime
 
 ### Pytorch
 import torch
@@ -31,6 +32,7 @@ parser.add_argument('--write_log', type=bool, default=True, help='Whether to wri
 parser.add_argument('--get_info', type=bool, default=False, help='Whether to get the information of the code')
 parser.add_argument('--save_viz', type=bool, default=True, help='Whether to save the visualization')
 parser.add_argument('--print_freq', type=int, default=1000, help='How often to print out the loss')
+parser.add_argument('--save_model', type =bool, default=False, help='Whether to save the trained model')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -47,7 +49,7 @@ class Config(object):
     test_list_file = './data/list_test.txt'
     assert os.path.exists(test_list_file) == True, print("test_list_file does not exist")
     log_dir = './logs'
-    model_dir = './cnn_model'
+    model_dir = './ckpt/models/'
     # Shape model parameters
     shape_model_file = './shape_model/shape_model/ShapeModel.mat'
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
@@ -72,6 +74,7 @@ class Config(object):
     get_info = args.get_info
     save_viz = args.save_viz
     print_freq = args.print_freq
+    save_model = args.save_model
 
 def landmarks2b(landmarks, ae, config, is_train = True):
     landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
@@ -258,6 +261,13 @@ def main():
     
     if config.save_viz:
         support.save_loss_plot(losses)
+    if config.save_model:
+        save_dict = dict()
+        save_dict['model'] = models['model'].state_dict()
+        save_dict['optimizer'] = optimizers['optimizer'].state_dict()
+        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        torch.save(save_dict, config.save_model_dir + dt_string + "_model.pth")
+    
 
 if __name__ == '__main__':
     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")

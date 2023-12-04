@@ -92,4 +92,4 @@ def print_config_inference(config):
     print("save_viz: {}".format(config.save_viz))
     print("print_config: {}".format(config.print_config))
     print("=====================================\n\n\n\n")
-    
+
