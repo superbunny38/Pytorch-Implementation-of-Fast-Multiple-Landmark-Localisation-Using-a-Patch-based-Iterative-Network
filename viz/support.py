@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+
 def print_config(config):
     print("\n\n\n\n========= Configuration Info. =========")
     print("\n=======File paths=======")
@@ -45,3 +47,19 @@ def print_info(config):
     print()
     print("For detailed information about the library versions, please refer to requirements.txt file")
     print("================================")
+    
+
+def save_loss_plot(save_losses):
+    plt.subplot(131)
+    plt.title("Total Loss")
+    plt.plot(save_losses['save_loss'])
+    plt.xlabel("Iterations")
+    plt.subplot(132)
+    plt.title("Classification Loss")
+    plt.plot(save_losses['save_loss_c'])
+    plt.xlabel("Iterations")
+    plt.subplot(133)
+    plt.title("Regression Loss")
+    plt.plot(save_losses['save_loss_r'])
+    plt.xlabel("Iterations")
+    plt.savefig("trace_loss.png")

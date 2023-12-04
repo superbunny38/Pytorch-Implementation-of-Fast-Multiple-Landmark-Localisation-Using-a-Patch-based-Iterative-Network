@@ -29,6 +29,8 @@ parser.add_argument('--device_id', type=int, default=0, help='Device ID')
 parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
 parser.add_argument('--write_log', type=bool, default=True, help='Whether to write the experiment log')
 parser.add_argument('--get_info', type=bool, default=False, help='Whether to get the information of the code')
+parser.add_argument('--save_viz', type=bool, default=True, help='Whether to save the visualization')
+parser.add_argument('--print_freq', type=int, default=1000, help='How often to print out the loss')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -68,6 +70,8 @@ class Config(object):
     write_log = args.write_log
     learning_rate_ae = args.learning_rate_ae
     get_info = args.get_info
+    save_viz = args.save_viz
+    print_freq = args.print_freq
 
 def landmarks2b(landmarks, ae, config, is_train = True):
     landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
@@ -223,6 +227,10 @@ def main():
     print(">>successful!")
     
     print("\n\nTraining pairs...")
+    save_loss_c = []
+    save_loss_r = []
+    save_loss = []
+    
     for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
         #generate training pairs via patch extraction
         patches, actions, dbs, bs = get_train_pairs(config.batch_size,
@@ -235,12 +243,21 @@ def main():
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        train_one_step.train_pairs(patches, actions, dbs, config, models, criterions, optimizers)
+        loss_c, loss_r, loss = train_one_step.train_pairs(patches, actions, dbs, config, models, criterions, optimizers)
+        save_loss_c.append(loss_c)
+        save_loss_r.append(loss_r)
+        save_loss.append(loss)
+        
+        if step_i%config.print_freq == 0:
+            print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
-
+    losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r, "save_loss": save_loss}
+    
+    if config.save_viz:
+        support.save_loss_plot(losses)
 
 if __name__ == '__main__':
     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")

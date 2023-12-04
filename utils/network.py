@@ -11,8 +11,9 @@ class cnn(nn.Module):
     def __init__(self, num_output_c, num_output_r, prob = 0.5):
         super(cnn, self).__init__()
         self.keep_prob = prob
+        self.num_landmarks = int(num_output_c/(2*3))
         self.conv1_1_pool = nn.Sequential(
-            nn.Conv2d(in_channels=30, out_channels=32, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=3*self.num_landmarks, out_channels=32, kernel_size=3, stride=1),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
