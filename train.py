@@ -105,6 +105,10 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     ind = np.random.randint(img_count, size = batch_size)
     print("ind: {}".format(ind))
     
+    #Randomly sample parameters
+    bounds = sd*np.sqrt()
+    
+    
     #Extract image patch
     # print("image size: {}".format(np.array(images).shape))
     for i in range(config.batch_size):
@@ -114,8 +118,7 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
         image = images[ind[i]]
         patches[i] = patch.extract_patch_all_landmarks(image, landmarks[ind[i]], box_r)# <- 원래 코드: patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)
     
-    #Regression values (distances between predicted and GT)
-    
+    #Regression values (distances between predicted and GT)    
     
     return
 
