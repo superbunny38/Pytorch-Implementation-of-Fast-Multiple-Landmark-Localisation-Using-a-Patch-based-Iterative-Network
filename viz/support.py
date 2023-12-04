@@ -42,5 +42,5 @@ def print_info(config):
     print("1. Replaced the shape model (i.e., PCA) with the convolutional autoencoder")
     print("2. Wrote code in Pytorch.")
     print()
-    print("For detailed information about the library versions, please refer to requirements.txt")
+    print("For detailed information about the library versions, please refer to requirements.txt file")
     print("================================)
