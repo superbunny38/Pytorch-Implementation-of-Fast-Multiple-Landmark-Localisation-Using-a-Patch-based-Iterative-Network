@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import autoencoder, input_data, network, patch
+from utils import autoencoder, input_data, network, patch, train_one_step
 from viz import support
 global args
 from tqdm.notebook import tqdm
@@ -169,30 +169,6 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     return patches, actions, dbs, bs
 
 
-def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers):
-    """
-    Args:
-        patches_train: x (input)
-        actions_train: classification labels
-        dbs_train: regression labels
-        config: fixed parameters
-        models: models
-    """
-    cls_loss = []
-    reg_loss = []
-    
-    models['model'].train()
-    patches_train = torch.from_numpy(patches_train).float().to(config.device)
-    yc, yr = models['model'](patches_train, actions_train, dbs_train)
-    
-    ### Calculate Loss
-    loss_c = criterions['cls'](yc_,yc)
-    loss_r = criterions['reg'](yr_,yr)
-    loss = config.alpha*loss_c + (1-config.alpha)*loss_r
-    
-    
-    #cls loss, reg loss, total loss
-    return
 
 def main():
     config = Config()
@@ -259,7 +235,7 @@ def main():
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        train_pairs(patches, actions, dbs, config, models, criterions, optimizers)
+        train_one_step.train_pairs(patches, actions, dbs, config, models, criterions, optimizers)
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
