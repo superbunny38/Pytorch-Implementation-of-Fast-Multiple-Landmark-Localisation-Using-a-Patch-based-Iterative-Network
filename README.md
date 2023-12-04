@@ -1,5 +1,5 @@
 # Pytorch-Implementation-of-Fast-Multiple-Landmark-Localisation-Using-a-Patch-based-Iterative-Network
-*by Chaeeun Ryu*
+*Code Writer: Chaeeun Ryu*
 
 **Not official!** <br>
 - Official Code Repository in Tensorflow: https://github.com/yuanwei1989/landmark-detection <br>
@@ -7,7 +7,9 @@
 - paper arxiv: https://arxiv.org/abs/1806.06987v2
 
 
-**Note:** Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model
+**Note:** 
+1. Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model
+2. I have referred to the codes from [the original repository](https://github.com/yuanwei1989/landmark-detection), so there are a lot of codes in common. I just made the code in Pytorch & runnable with the latest version of libraries needed.
 
 - To-dos:
     - scheduler 도입
