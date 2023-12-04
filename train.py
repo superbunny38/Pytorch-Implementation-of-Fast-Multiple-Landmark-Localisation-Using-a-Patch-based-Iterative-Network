@@ -96,10 +96,22 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     #get image indices randomly for a mini-batch
     ind = np.random.randint(img_count, size = batch_size)
     
-    
-    
-    
     return
+
+def train_pairs(patches_train, actions_train, dbs_train, config, models):
+    """
+    Args:
+        patches_train: x (input)
+        actions_train: classification labels
+        dbs_train: regression labels
+        config: fixed parameters
+        models: models
+    """
+    
+    models['model'].train()
+    patches_train = torch.from_numpy(patches_train).float().to(config.device)
+    yc, yr = models['model'](patches_train, actions_train, dbs_train)
+    
 
 def main():
     config = Config()
@@ -151,6 +163,7 @@ def main():
     
     print("\n\nTraining pairs...")
     for step_i in tqdm(range(config.max_steps), desc='Training...'):
+        #generate training pairs via patch extraction
         get_train_pairs(config.batch_size,
                         train_dataset.images,
                         train_dataset.labels,
@@ -158,6 +171,9 @@ def main():
                         num_cnn_output_c,
                         num_cnn_output_r,
                         models)
+        
+        #train the model with the generated training pairs
+        train_pairs()
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
