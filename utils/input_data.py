@@ -112,9 +112,12 @@ def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, 
         label = extract_label(os.path.join(label_dir, file_name+'_ps.txt'))
         
         #Store extracted data
-        images.append(np.expand_dims(img,axis=3))
+        # print("img shape: {}".format(img.shape))
+        images.append(np.expand_dims(img, axis=3))#
+        # print("label shape: {}".format(label.shape)) <- 맞음
         labels[i,:,:] = label
-    
+    # print("images[0] shape: {}".format(images[0].shape)) <- 맞음
+    # print("labels shape: {}".format(np.array(labels).shape)) <- 맞음
     return file_names, images, labels, pix_dim
     
 #config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant
@@ -135,7 +138,8 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,dimensio
 
     """
     # print(">>Loading train (& val) images...")
-    
+    #
+    # return file_names, images, labels, pix_dim
     train_names, train_images, train_labels, train_pix_dim = extract_all_image_and_label(train_list_file,data_dir,
                                                                                                             label_dir,
                                                                                                             landmark_count,
@@ -149,8 +153,8 @@ def read_data_sets(data_dir, label_dir, train_list_file, test_list_file,dimensio
                                                                                                         landmark_count,
                                                                                                         landmark_unwant,
                                                                                                         )
-    
-    
+    # print("input_data.py")
+    # print(np.array(train_images).shape)
     train_dataset = CTPDataset(train_names, train_images, train_labels, train_pix_dim)
     test_dataset = CTPDataset(test_names, test_images, test_labels, test_pix_dim)
     return train_dataset, test_dataset

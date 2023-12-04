@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import autoencoder, input_data, network
+from utils import autoencoder, input_data, network, patch
 from viz import support
 global args
 from tqdm.notebook import tqdm
@@ -81,20 +81,41 @@ def landmarks2b(landmarks, ae, config, is_train = True):
 
 def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_outputs, models, is_train = True):
     img_count = len(images)
+    # print("initial")
+    # print(np.array(images).shape)
+    # print("labels:",labels)
+    # print("labels shape: {}".format(labels.shape)) <- 맞음
+    
     if config.landmark_count > 3:
         bs_gt, decoded_landmarks = landmarks2b(labels, models['shape_model'], config, is_train)
+        landmarks = models['shape_model'].decoder(bs_gt)
+        
     else:#num_landmarks가 3개 이하면 compression 필요 없어보임
         bs_gt = labels
         decoded_landmarks = labels
+        landmarks = labels
         
     num_landmarks = config.landmark_count
     box_r = int((config.box_size-1)/2)
     patches = np.zeros((batch_size, config.box_size, config.box_size, int(3*num_landmarks)), dtype=np.float32)
     actions_ind = np.zeros((batch_size, num_actions), dtype=np.float32)
-    actions = np.zeros((batch_size, num_actions, np.float32))
+    actions = np.zeros((batch_size, num_actions), np.float32)
     
     #get image indices randomly for a mini-batch
     ind = np.random.randint(img_count, size = batch_size)
+    print("ind: {}".format(ind))
+    
+    #Extract image patch
+    # print("image size: {}".format(np.array(images).shape))
+    for i in range(config.batch_size):
+        # print("ind[i]: {}".format(ind[i]))
+        # print("len(patches): {}".format(len(patches)))
+        # print("len(landmarks): {}".format(len(landmarks)))
+        image = images[ind[i]]
+        patches[i] = patch.extract_patch_all_landmarks(image, landmarks[ind[i]], box_r)# <- 원래 코드: patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)
+    
+    #Regression values (distances between predicted and GT)
+    
     
     return
 
@@ -112,6 +133,7 @@ def train_pairs(patches_train, actions_train, dbs_train, config, models):
     patches_train = torch.from_numpy(patches_train).float().to(config.device)
     yc, yr = models['model'](patches_train, actions_train, dbs_train)
     
+    return
 
 def main():
     config = Config()
@@ -156,13 +178,14 @@ def main():
     optimizers = dict()
     optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
     optimizers['optimizer'] = optimizer
+    
     if config.landmark_count > 3:
         optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate_ae)
         optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
     
     print("\n\nTraining pairs...")
-    for step_i in tqdm(range(config.max_steps), desc='Training...'):
+    for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
         #generate training pairs via patch extraction
         get_train_pairs(config.batch_size,
                         train_dataset.images,
