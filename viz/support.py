@@ -1,6 +1,6 @@
 from matplotlib import pyplot as plt
 
-def print_config(config):
+def print_config_train(config):
     print("\n\n\n\n========= Configuration Info. =========")
     print("\n=======File paths=======")
     print("data_dir: {}".format(config.data_dir))
@@ -63,3 +63,7 @@ def save_loss_plot(save_losses):
     plt.plot(save_losses['save_loss_r'])
     plt.xlabel("Iterations")
     plt.savefig("trace_loss.png")
+    
+    
+def print_config_inference(config):
+    print("\n\n\n\n========= Configuration Info. =========")

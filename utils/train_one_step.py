@@ -16,7 +16,6 @@ def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers)
         config: fixed parameters
         models: models
     """
-        
     models['model'].train()
     patches_train = torch.from_numpy(patches_train).float().to(config.device)
     #[batch_size, box_size, box_size, 3*num_landmarks] -> [batch_size, 3*num_landmarks, box_size, box_size]
@@ -25,6 +24,10 @@ def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers)
     
     yc_, yr_ = torch.from_numpy(yc_).float().to(config.device), torch.from_numpy(yr_).float().to(config.device)
     yc, yr = models['model'](patches_train)
+    yc = nn.Softmax(dim=1)(yc)
+    
+    # print(f"\n\n\nclassification label: {yc_[0]}, classifcation prediction: {yc[0]}")
+    # print(f"\nregression label: {yr_[0]}, regression prediction: {yr[0]}")
     
     ### Calculate Loss
     loss_c = criterions['cls'](yc_,yc)

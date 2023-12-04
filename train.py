@@ -178,7 +178,7 @@ def main():
     config = Config()
     
     if args.print_config:
-        support.print_config(config)
+        support.print_config_train(config)
     if args.get_info:
         support.print_info(config)
         
@@ -209,8 +209,8 @@ def main():
     print("\n\nLoading Loss and optimizers for shape model and PIN... ")
     #Define Loss for training
     criterions = dict()
-    criterions['cls'] = nn.CrossEntropyLoss()
-    criterions['reg'] = nn.MSELoss()
+    criterions['cls'] = nn.CrossEntropyLoss().to(config.device)
+    criterions['reg'] = nn.MSELoss().to(config.device)
     
     if config.landmark_count > 3:
         criterions['autoencoder'] = nn.BCELoss()

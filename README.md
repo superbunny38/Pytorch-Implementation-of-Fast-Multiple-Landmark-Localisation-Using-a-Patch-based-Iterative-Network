@@ -8,3 +8,7 @@
 
 
 **Note:** Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model
+
+- To-dos:
+    - scheduler 도입
+    - regression metric 도입
