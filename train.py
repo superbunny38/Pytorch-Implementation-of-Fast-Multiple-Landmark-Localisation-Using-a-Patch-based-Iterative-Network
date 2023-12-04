@@ -69,9 +69,35 @@ class Config(object):
     learning_rate_ae = args.learning_rate_ae
     get_info = args.get_info
 
+def landmarks2b(landmarks, ae, config, is_train = True):
+    landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
+    landmarks = torch.from_numpy(landmarks).float().to(config.device)#convert to pytorch tensor
+    # print(landmarks.size())#[num_examples, 3*num_landmarks] == [1,3*2]
+    
+    ae.train()
+    bs_gt = ae.encoder(landmarks)
+    decoded_landmarks = ae.decoder(bs_gt)
+    return bs_gt, decoded_landmarks
 
-def get_train_pairs(batch_size, images, config, num_actions, num_regression_outputs, models):
+def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_outputs, models, is_train = True):
     img_count = len(images)
+    if config.landmark_count > 3:
+        bs_gt, decoded_landmarks = landmarks2b(labels, models['shape_model'], config, is_train)
+    else:#num_landmarks가 3개 이하면 compression 필요 없어보임
+        bs_gt = labels
+        decoded_landmarks = labels
+        
+    num_landmarks = config.landmark_count
+    box_r = int((config.box_size-1)/2)
+    patches = np.zeros((batch_size, config.box_size, config.box_size, int(3*num_landmarks)), dtype=np.float32)
+    actions_ind = np.zeros((batch_size, num_actions), dtype=np.float32)
+    actions = np.zeros((batch_size, num_actions, np.float32))
+    
+    #get image indices randomly for a mini-batch
+    ind = np.random.randint(img_count, size = batch_size)
+    
+    
+    
     
     return
 
@@ -85,15 +111,17 @@ def main():
         
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
-    print("\n\nLoading shape model(=conv autoencoder) and PIN... ")
+    print("\n\nLoading shape model(=autoencoder) and PIN... ")
     
     num_cnn_output_c, num_cnn_output_r = 2*config.landmark_count*config.dimension, config.landmark_count*config.dimension
     models = dict()
-    shape_model = autoencoder.load_model(config.device)
+    if config.landmark_count > 3:
+        shape_model = autoencoder.load_model(config.landmark_count*3, config.device)
     model = network.cnn(num_cnn_output_c, num_cnn_output_r)
     model.to(config.device)
-    shape_model.to(config.device)
-    models['shape_model'] = shape_model
+    if config.landmark_count > 3:
+        shape_model.to(config.device)
+        models['shape_model'] = shape_model
     models['model'] = model
     
     # print("landmark_count: {}".format(config.landmark_count))
@@ -107,20 +135,25 @@ def main():
     criterions = dict()
     criterions['cls'] = nn.CrossEntropyLoss()
     criterions['reg'] = nn.MSELoss()
-    criterions['autoencoder'] = nn.BCELoss()
-    #Define Loss for autoencoder
+    
+    if config.landmark_count > 3:
+        criterions['autoencoder'] = nn.BCELoss()
+        #Define Loss for autoencoder
     
     #Define Optimizer
     optimizers = dict()
     optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
-    optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate_ae)
     optimizers['optimizer'] = optimizer
-    optimizers['optimizer_autoencoder'] = optimizer_autoencoder
+    if config.landmark_count > 3:
+        optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate_ae)
+        optimizers['optimizer_autoencoder'] = optimizer_autoencoder
     print(">>successful!")
     
+    print("\n\nTraining pairs...")
     for step_i in tqdm(range(config.max_steps), desc='Training...'):
         get_train_pairs(config.batch_size,
                         train_dataset.images,
+                        train_dataset.labels,
                         config,
                         num_cnn_output_c,
                         num_cnn_output_r,

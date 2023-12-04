@@ -4,42 +4,35 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-class ConvAutoencoder(nn.Module):#아직 input shape 안 맞춤
-    def __init__(self):
-        super(ConvAutoencoder, self).__init__()
+class Autoencoder(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(Autoencoder, self).__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 16, 3, padding=1),
+            nn.Linear(in_size, 128),
             nn.ReLU(True),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(16, 8, 3, padding=1),
+            nn.Linear(128,64),
             nn.ReLU(True),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(8, 4, 3, padding=1),
+            nn.Linear(64,12),
             nn.ReLU(True),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(4, 2, 3, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(2, 1, 3, padding=1),
-            nn.ReLU(True),
-            nn.MaxPool2d(2, 2),
+            nn.Linear(12, out_size),
         )
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(1, 2, 3, padding=1),
+            nn.Linear(),
             nn.ReLU(True),
-            nn.ConvTranspose2d(2, 4, 3, padding=1),
+            nn.Linear(),
             nn.ReLU(True),
-            nn.ConvTranspose2d(4, 8, 3, padding=1)
+            nn.Linear(),
+            nn.ReLU(True),
+            nn.Linear()
         )
-        
-        
+    
     def forward(self, x):
-        compressed = self.encoder(x)
-        reconstructed = F.sigmoid(self.decoder(compressed))
-        return compressed, reconstructed
-
-def load_model(device):
-    autoencoder = ConvAutoencoder().to(device)
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return encoded, decoded
+    
+def load_model(in_size, device):
+    autoencoder = Autoencoder(in_size).to(device)
     return autoencoder
 
 def landmarks2b(landmarks, autoencoder, device):

@@ -5,6 +5,9 @@
 import torch.nn as nn
 import torch
 
+
+
+
 class cnn(nn.Module):
     def __init__(self, num_output_c, num_output_r, prob = 0.5):
         super(cnn, self).__init__()

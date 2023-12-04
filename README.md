@@ -7,4 +7,4 @@
 - paper arxiv: https://arxiv.org/abs/1806.06987v2
 
 
-**Note:** Unlike the original paper, this implementation jointly trains convolutional autoencoder with PIN. Therefore, the convolutional autoencoder is used instead of the shape model
+**Note:** Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model
