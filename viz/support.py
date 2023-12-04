@@ -43,4 +43,4 @@ def print_info(config):
     print("2. Wrote code in Pytorch.")
     print()
     print("For detailed information about the library versions, please refer to requirements.txt file")
-    print("================================)
+    print("================================")
