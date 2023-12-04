@@ -79,7 +79,25 @@ def landmarks2b(landmarks, ae, config, is_train = True):
     decoded_landmarks = ae.decoder(bs_gt)
     return bs_gt, decoded_landmarks
 
-def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_outputs, models, is_train = True):
+def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_output, models, is_train = True):
+    '''
+    Args:
+        batch_size: Number of examples in a mini-batch
+        images: List of images
+        labels: List of labels (=landmarks)
+        config: Training configurations
+        num_actions: Number of classification outputs
+        num_regression_output: Number of regression outputs
+        sd: standard deviation, bounds from which to sample bs
+        
+    
+    Returns:
+        patches: 2D image patches, [batch_size, box_size, box_size, 3*num_landmarks]
+        actions: Ground truth classification outputs, [batch_size, num_actions] each row is one hot vector [positive or negative for each shape parameter]
+        dbs: Ground truth regression output. [batch_size, num_regression_output]. dbs = bs - bs_gt.
+        bs: sampled shape parameters [batch_size, num_regression_output]
+        
+    '''
     img_count = len(images)
     # print("initial")
     # print(np.array(images).shape)
@@ -91,23 +109,24 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
         landmarks = models['shape_model'].decoder(bs_gt)
         
     else:#num_landmarks가 3개 이하면 compression 필요 없어보임
-        bs_gt = labels
+        bs_gt = labels.reshape(labels.shape[0],-1)
         decoded_landmarks = labels
         landmarks = labels
         
     num_landmarks = config.landmark_count
     box_r = int((config.box_size-1)/2)
     patches = np.zeros((batch_size, config.box_size, config.box_size, int(3*num_landmarks)), dtype=np.float32)
-    actions_ind = np.zeros((batch_size, num_actions), dtype=np.float32)
+    actions_ind = np.zeros((batch_size), dtype=np.float32)
     actions = np.zeros((batch_size, num_actions), np.float32)
     
     #get image indices randomly for a mini-batch
     ind = np.random.randint(img_count, size = batch_size)
-    print("ind: {}".format(ind))
+    # print("ind: {}".format(ind))
     
-    #Randomly sample parameters
-    bounds = sd*np.sqrt()
-    
+    #Randomly sampled x from V
+    #dGT = xGT - x
+    bounds = config.sd*np.sqrt(config.landmark_count)
+    bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
     
     #Extract image patch
     # print("image size: {}".format(np.array(images).shape))
@@ -119,8 +138,36 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
         patches[i] = patch.extract_patch_all_landmarks(image, landmarks[ind[i]], box_r)# <- 원래 코드: patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)
     
     #Regression values (distances between predicted and GT)    
+    dbs = bs - bs_gt
     
-    return
+    #Extract classification labels as a one-hot vector
+    max_db_ind = np.argmax(np.abs(dbs), axis = 1)
+    max_db = dbs[np.arange(dbs.shape[0]), max_db_ind]
+    is_positive = (max_db > 0.5)
+    actions_ind[is_positive] = max_db_ind[is_positive]*2
+    actions_ind[np.logical_not(is_positive)] = max_db_ind[np.logical_not(is_positive)]*2 + 1
+    # print("actions shape:", actions.shape)
+    # print("actions_ind:", actions_ind)
+    # print("actions_ind shape: {}".format(actions_ind.shape))
+    actions_ind = actions_ind.astype(int)
+    # print(actions_ind.dtype)
+    # print("actions:", actions)
+    # print(actions_ind.dtype)
+    # print(np.arange(config.batch_size))
+    actions[np.ix_(np.arange(config.batch_size), actions_ind)] = 1#original code: actions = actions[np.arange(config.batch_size), actions_ind] = 1
+    # print("\n\n\n\nAfter")
+    # print(actions)
+    # print("possible")
+    # actions = actions[np.arange(config.batch_size), actions_ind] = 1
+    # print("actions:", actions)
+    
+    #Shape assertions
+    assert patches.shape[0] == config.batch_size, print("wrong shape of patches (1st dim)")
+    assert patches.shape[1] == config.box_size, print("wrong shape of patches (2nd dim)")
+    assert dbs.shape[0] == config.batch_size, print("wrong shape of dbs (1st dim)")
+    assert dbs.shape[1] == num_regression_output, print("wrong shape of db (2nd dim)")
+    return patches, actions, dbs, bs
+
 
 def train_pairs(patches_train, actions_train, dbs_train, config, models):
     """
@@ -151,6 +198,9 @@ def main():
     print("\n\nLoading shape model(=autoencoder) and PIN... ")
     
     num_cnn_output_c, num_cnn_output_r = 2*config.landmark_count*config.dimension, config.landmark_count*config.dimension
+    # print("num_cnn_output_c: {}, num_cnn_output_r: {}".format(num_cnn_output_c, num_cnn_output_r))
+    #num_cnn_output_c: 3(axis)x2(pos/neg)xlandmark_count
+    #num_cnn_output_r: 3(axis)xlandmark_count
     models = dict()
     if config.landmark_count > 3:
         shape_model = autoencoder.load_model(config.landmark_count*3, config.device)
@@ -190,16 +240,17 @@ def main():
     print("\n\nTraining pairs...")
     for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
         #generate training pairs via patch extraction
-        get_train_pairs(config.batch_size,
-                        train_dataset.images,
-                        train_dataset.labels,
-                        config,
-                        num_cnn_output_c,
-                        num_cnn_output_r,
-                        models)
+        patches, actions, dbs, bs = get_train_pairs(config.batch_size,
+                                                    train_dataset.images,
+                                                    train_dataset.labels,
+                                                    config,
+                                                    num_cnn_output_c,
+                                                    num_cnn_output_r,
+                                                    models)
         
         #train the model with the generated training pairs
-        train_pairs()
+        #params: patches_train, actions_train, dbs_train, config, models
+        train_pairs(patches, actions, dbs, config, models)
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
