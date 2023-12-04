@@ -8,7 +8,7 @@ def print_config_train(config):
     print("train_list_file: {}".format(config.train_list_file))
     print("test_list_file: {}".format(config.test_list_file))
     print("log_dir: {}".format(config.log_dir))
-    print("model_dir: {}".format(config.model_dir))
+    print("saving model to dir: {}".format(config.save_model_dir))
     
     print("\n=======Shape model parameters=======")
     print("shape_model_file: {}".format(config.shape_model_file))

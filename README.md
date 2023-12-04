@@ -4,7 +4,7 @@
 **Not official!** <br>
 - Official Code Repository in Tensorflow: https://github.com/yuanwei1989/landmark-detection <br>
 - Official paper: https://arxiv.org/pdf/1806.06987.pdf 
-- paper arxiv: https://arxiv.org/abs/1806.06987v2
+- Paper arxiv: https://arxiv.org/abs/1806.06987v2
 
 
 **Note:** 
@@ -12,5 +12,6 @@
 2. I have referred to the codes from [the original repository](https://github.com/yuanwei1989/landmark-detection), so there are a lot of codes in common. I just made the code in Pytorch & runnable with the latest version of libraries needed.
 
 - To-dos:
-    - scheduler 도입
-    - regression metric 도입
+    - scheduler added (Not in the original paper)
+    - autoencoder enabled (Not in the original paper)
+    - augmentation added (Not in the original paper)

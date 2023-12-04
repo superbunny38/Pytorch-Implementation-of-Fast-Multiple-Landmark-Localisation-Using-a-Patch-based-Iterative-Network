@@ -7,7 +7,11 @@ from viz import support
 global args
 from tqdm.notebook import tqdm
 import glob
+
+#to track time, time functions
 from datetime import datetime
+from datetime import timedelta
+import time
 
 ### Pytorch
 import torch
@@ -32,7 +36,8 @@ parser.add_argument('--write_log', type=bool, default=True, help='Whether to wri
 parser.add_argument('--get_info', type=bool, default=False, help='Whether to get the information of the code')
 parser.add_argument('--save_viz', type=bool, default=True, help='Whether to save the visualization')
 parser.add_argument('--print_freq', type=int, default=1000, help='How often to print out the loss')
-parser.add_argument('--save_model', type =bool, default=False, help='Whether to save the trained model')
+parser.add_argument('--save_model', type =bool, default=True, help='Whether to save the trained model')
+parser.add_argument('--save_log',type=bool, default=False, help='Whether to save the experiment log')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -49,7 +54,7 @@ class Config(object):
     test_list_file = './data/list_test.txt'
     assert os.path.exists(test_list_file) == True, print("test_list_file does not exist")
     log_dir = './logs'
-    model_dir = './ckpt/models/'
+    save_model_dir = './ckpt/models/'
     # Shape model parameters
     shape_model_file = './shape_model/shape_model/ShapeModel.mat'
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
@@ -75,6 +80,7 @@ class Config(object):
     save_viz = args.save_viz
     print_freq = args.print_freq
     save_model = args.save_model
+    save_log = args.save_log
 
 def landmarks2b(landmarks, ae, config, is_train = True):
     landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
@@ -188,7 +194,7 @@ def main():
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("\n\nLoading shape model(=autoencoder) and PIN... ")
-    
+    start_time = time.time()
     num_cnn_output_c, num_cnn_output_r = 2*config.landmark_count*config.dimension, config.landmark_count*config.dimension
     # print("num_cnn_output_c: {}, num_cnn_output_r: {}".format(num_cnn_output_c, num_cnn_output_r))
     #num_cnn_output_c: 3(axis)x2(pos/neg)xlandmark_count
@@ -258,18 +264,25 @@ def main():
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
     losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r, "save_loss": save_loss}
+    elapsed_time = time.time() - start_time
+    print("Finished Training! Elapsed time:",str(timedelta(seconds= elapsed_time)))
     
+    
+    ### Saving the results of the training ###
     if config.save_viz:
         support.save_loss_plot(losses)
+    if config.save_log:
+        save_log_dict = dict()
+        save_log_dict['elapsed_time'] = elapsed_time
     if config.save_model:
         save_dict = dict()
         save_dict['model'] = models['model'].state_dict()
         save_dict['optimizer'] = optimizers['optimizer'].state_dict()
-        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        dt_string = datetime.now().strftime("%d_%m_%H_%M_%S").replace('/','.')
         torch.save(save_dict, config.save_model_dir + dt_string + "_model.pth")
     
 
 if __name__ == '__main__':
     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     main()
-    print("Successfully finished!")
+    print("All done!")
