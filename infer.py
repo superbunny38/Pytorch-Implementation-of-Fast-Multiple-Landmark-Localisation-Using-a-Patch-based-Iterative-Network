@@ -14,7 +14,6 @@ parser.add_argument('--print_info', type=bool, default=False, help='Whether to p
 parser.add_argument('--dimension', type=int, default=3, help='Dimension of the data.')
 args = parser.parse_args()
 
-
 class Config(object):
     """Inference configurations."""
     # File paths
@@ -71,4 +70,5 @@ def main():
     model.to(config.device)
     print(">>successful!")
     
+    print("\n\n Starting prediction...")
     predict(test_dataset, config)
