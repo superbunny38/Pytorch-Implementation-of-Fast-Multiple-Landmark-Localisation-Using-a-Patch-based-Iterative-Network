@@ -1,9 +1,10 @@
 import numpy as np
 import argparse
 from viz import support
-from utils import input_data, network
+from utils import input_data, network, patch
 import torch
 from tqdm import tqdm
+import glob
 
 #to track time, time functions
 from datetime import datetime
@@ -57,8 +58,40 @@ class Config(object):
     print_info = args.print_info
     dimension = args.dimension
 
+def landmark_initialization(landmarks, config, single_image):
+    """Landmark Initialization for landmark inference.
+    (One should be at the center of the image)
+    
+    In paper, this initialisation is supposed to set the other initial landmarks except for the center location at fixed distance of one-quarter image size around it, but I made it random.
+
+    Args:
+        landmarks: zero array of shape (num_examples=num_random_init+1, num_landmarks, 3)
+        config: configuration
+        single_image: single 3D image [width, height, depth, channel]
+        
+    """
+    ### Center
+    center_x, center_y, center_z = single_image.shape[0]/2, single_image.shape[1]/2, single_image.shape[2]/2
+    center = []
+    for i in range(config.landmark_count):
+        center.append([center_x, center_y, center_z])
+    landmarks[0] = center
+    
+    ### Random initialisations
+    for i in range(config.num_random_init):
+        random_x = np.random.uniform(0, single_image.shape[0])
+        random_y = np.random.uniform(0, single_image.shape[1])
+        random_z = np.random.uniform(0, single_image.shape[2])
+        random_landmark = []
+        for j in range(config.landmark_count):
+            random_landmark.append([random_x, random_y, random_z])
+        landmarks[i+1] = random_landmark
+    
+    return landmarks
+    
+
 #original repo params: predict_landmarks(images[i], config, shape_model, sess, x, action_ind, yc, yr, keep_prob)
-def predict_landmarks(image, config):
+def predict_landmarks(image, config, model):# Predict one image.
     """Predict landmarks iteratively.
 
     Args:
@@ -69,11 +102,34 @@ def predict_landmarks(image, config):
     max_test_steps = config.max_test_steps
     patch_size = config.patch_size
     patch_r = int((patch_size - 1)/2)
+    #num_examples: number of patches to extract for one image according to the landmarks
+    num_examples = config.num_random_init + 1
     
-    
-    return
+    #Initialize initial landmarks with zeros because no representation compression is done by PCA
+    landmarks = np.zeros((num_examples, num_landmarks, 3))
+    landmarks = landmark_initialization(landmarks, config, image)#initialize (n_init+1) points (one at the volume center)
 
-def predict(dataset, config):
+    #Extract patches from landmarks
+    patches = np.zeros((num_examples, patch_size, patch_size, num_landmarks*3))
+    
+    
+    for idx in range(num_examples):
+        patches[idx] = patch.extract_patch_all_landmarks(image, landmarks[idx], patch_r)
+        
+    
+    landmarks_all_steps = np.zeros((max_test_steps+1, num_examples, num_landmarks, 3))
+    landmarks_all_steps[0] = landmarks
+    
+    #Find path of landmark iteratively
+    for jdx in range(config.max_test_steps):
+        action_ind_val, yc_val, yr_val = network.predict_cnn(patches, config, model)
+        
+        #Compute classification probabilities
+        
+        
+    return 0,0
+
+def predict(dataset, config, model):#Predict landmarks for entire images.
     """Find the path of the landmark iteratively, and evaluate the results.
 
     Args:
@@ -97,9 +153,9 @@ def predict(dataset, config):
     images_unscale = []
     time_elapsed = np.zeros(img_count)
     
-    for i in tqdm(range(img_count), desc = "Predict landmarks iteratively..."):
+    for i in tqdm(range(img_count), desc = "Predict landmarks for all images one by one..."):
         start_time_img = time.time()
-        landmarks_all_steps[i], landmarks_mean[i] = predict_landmarks(images[i], config)
+        landmarks_all_steps[i], landmarks_mean[i] = predict_landmarks(images[i], config, model)
         end_time_img = time.time()
         time_elapsed[i] = end_time_img - start_time_img
         
@@ -130,7 +186,7 @@ def main():
     print(">>successful!")
     
     print("\n\n Starting prediction...")
-    predict(test_dataset, config)
+    predict(test_dataset, config, model)
 
 
 if __name__ == '__main__':

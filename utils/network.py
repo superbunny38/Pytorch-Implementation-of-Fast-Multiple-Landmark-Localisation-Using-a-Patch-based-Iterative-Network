@@ -72,3 +72,28 @@ class cnn(nn.Module):
         yr = self.reg(x)
         
         return yc, yr
+    
+    
+
+def predict_cnn(patches, config, model):
+    """Predict with cnn
+
+    Args:
+        patches: Patches to inference, [num_examples, patch_size, patch_size, num_landmarks*3]
+        config: configuration
+        model: loaded model
+
+    Returns:
+        action_ind_val: predicted classification label
+        yc_val: predicted classification prob
+        yr_val: predicted regression value
+    """
+    model.eval()
+    patches = torch.from_numpy(patches).float().to(config.device)
+    patches = patches.permute(0, 3, 1, 2)
+    yc, yr = model(patches)
+    yc = nn.Softmax(dim=1)(yc)
+    action_ind_val = torch.argmax(yc, dim=1)
+    yc_val = torch.max(yc, dim=1)[0]
+    yr_val = torch.max(yr, dim=1)[0]
+    return action_ind_val, yc_val, yr_val

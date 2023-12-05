@@ -95,6 +95,8 @@ def print_config_inference(config):
     print("\n=======Experiment parameters=======")
     print("number of landmarks: {}".format(config.landmark_count))
     print("patch size: {}".format(config.patch_size))
+    print("dimension: {}".format(config.dimension))
+    print("device: {}\n".format(config.device))
     print("=====================================\n\n\n\n")
 
 def patch_support(images, patch_size):
