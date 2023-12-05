@@ -8,7 +8,7 @@
 
 
 **Note:** 
-1. Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model. (The compression of landmarks representation is only enabled if the number of landmarks exceeds 3.)
+1. Unlike the original paper, this implementation jointly trains autoencoder with PIN. Therefore, the autoencoder is used instead of the shape model. (The compression of landmarks representation is only enabled if the number of landmarks exceeds 3.)<br>
     [Details]:
     ex) number of landmarks = 2
     

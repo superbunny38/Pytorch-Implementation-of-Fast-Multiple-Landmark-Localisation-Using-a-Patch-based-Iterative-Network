@@ -64,6 +64,7 @@ class Config(object):
     # Training parameters
     resume = False          # Whether to train from scratch or resume previous training
     box_size = args.box_size          # patch size (odd number)
+    assert box_size % 2 == 1, print("box_size should be odd number")
     alpha = args.alpha             # Weighting given to the loss (0<=alpha<=1). loss = alpha*loss_c + (1-alpha)*loss_r
     learning_rate = args.learning_rate  # Baseline learning rate
     max_steps = args.max_steps      # Number of steps to train
@@ -211,6 +212,9 @@ def main():
     print("\n\nLoading data...")
     train_dataset, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     print(">>successful!")
+    
+    support.patch_support(train_dataset.images, config.box_size)
+    support.patch_support(test_dataset.images, config.box_size)
     
     print("\n\nLoading Loss and optimizers for shape model and PIN... ")
     #Define Loss for training

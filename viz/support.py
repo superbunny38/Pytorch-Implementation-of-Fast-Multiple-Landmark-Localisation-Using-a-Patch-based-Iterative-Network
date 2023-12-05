@@ -91,5 +91,14 @@ def print_config_inference(config):
     print("\n=======Visualisation parameters=======")
     print("save_viz: {}".format(config.save_viz))
     print("print_config: {}".format(config.print_config))
+    
+    print("\n=======Experiment parameters=======")
+    print("number of landmarks: {}".format(config.landmark_count))
+    print("patch size: {}".format(config.patch_size))
     print("=====================================\n\n\n\n")
 
+def patch_support(images, patch_size):
+    n_images = len(images)
+    h,w = images[0].shape[0], images[0].shape[1]
+    if patch_size < max(h,w)/3:
+        print("It is recommended to enlarge the patch size for better performance.")

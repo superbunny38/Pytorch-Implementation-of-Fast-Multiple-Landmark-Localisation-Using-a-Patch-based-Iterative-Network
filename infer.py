@@ -11,7 +11,7 @@ from datetime import timedelta
 import time
 
 parser = argparse.ArgumentParser(description='Argparse')
-parser.add_argument('--max_test_steps', type=int, default=10, help='Number of inference steps.')
+parser.add_argument('--max_test_steps', type=int, default=10, help='Number of inference steps. (Recommended: 10 for Rule B and Rule C, 350 for Rule A)')
 #single landmark localisation 할 때는 num_random_init = 19 (one at center)
 parser.add_argument('--num_random_init', type=int, default=5, help='Number of random initialisations used.')
 parser.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.')
@@ -20,6 +20,8 @@ parser.add_argument('--print_config', type=bool, default=False, help='Whether to
 parser.add_argument('--device', type=str, default='cuda:0', help='Device to run gpu on.')
 parser.add_argument('--print_info', type=bool, default=False, help='Whether to print out information about this code.')
 parser.add_argument('--dimension', type=int, default=3, help='Dimension of the data.')
+parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmarks.')
+parser.add_argument('--patch_size', type=int, default=101, help='Patch size (odd), Recommended: at least 1/3 of max(height, width).')
 args = parser.parse_args()
 
 class Config(object):
@@ -34,10 +36,11 @@ class Config(object):
     shape_model_file = ''
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
     sd = 3.0                # Standard deviation of shape parameters
-    landmark_count = 2     # Number of landmarks
+    landmark_count = args.landmark_count     # Number of landmarks
     landmark_unwant = []     # list of unwanted landmark indices
     # Testing parameters
-    box_size = 101          # patch size (odd number)
+    patch_size = args.patch_size          # patch size (odd number)
+    assert patch_size % 2 != 0, print("it is recommended that the patch size is an odd number.")
     max_test_steps = args.max_test_steps     # Number of inference steps
     num_random_init = args.num_random_init     # Number of random initialisations used
     predict_mode = args.predict_mode        # How the new patch position is computed.
@@ -67,6 +70,7 @@ def predict(dataset, config):
     """
     num_landmarks = config.landmark_count
     images = dataset.images
+    
     landmarks = dataset.labels
     names = dataset.names
     pix_dim = dataset.pix_dim
@@ -87,9 +91,7 @@ def predict(dataset, config):
         end_time_img = time.time()
         time_elapsed[i] = end_time_img - start_time_img
         
-        #convert the scaling back to that of the original image
-      
-    
+        #convert the scaling back to that of the original image    
     
 def main():
     config = Config()
@@ -106,6 +108,8 @@ def main():
     print("\n\nLoading data...")
     _, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     print(">>successful!")
+    
+    support.patch_support(test_dataset.images, config.patch_size)
     
     print(f"\n\n Load trained model on {config.device} gpu...")
     model = network.cnn(num_cnn_output_c, num_cnn_output_r)
