@@ -18,8 +18,10 @@ def update_landmarks(landmarks, action_prob, yr_val, config):#update rule A,B,C
         landmarks[row_ind,ind] = landmarks[row_ind,ind] - yr_val[row_ind,ind]
 
     elif config.predict_mode == 1:
-        landmarks = landmarks - yr_val*np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1])), axis =2)
-
+        #landmarks = landmarks - yr_val*np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1],2)), axis =2)
+        #above code throws an error
+        pass
+    
     elif config.predict_mode == 2:
         landmarks = landmarks - yr_val
 

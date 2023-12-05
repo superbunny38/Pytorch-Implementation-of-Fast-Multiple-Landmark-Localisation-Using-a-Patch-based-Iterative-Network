@@ -133,8 +133,19 @@ def predict_landmarks(image, config, model):# Predict one image.
         #update landmarks
         landmarks = update.update_landmarks(landmarks, action_prob, yr_val, config)#update rule A, B, C
         
+        landmarks_all_steps[jdx+1] = landmarks
         
-    return 0,0
+        #Extract patches from landmarks
+        for kdx in range(num_examples):
+            patches[kdx] = patch.extract_patch_all_landmarks(image, landmarks[kdx], patch_r)
+    
+    #Compute mean of all initialisations
+    landmarks_mean = np.mean(landmarks_all_steps[-1,:,:,:], axis=0)#landmarks_mean: [num_landmarks, 3]
+    # print("landmarks mean shape: ", landmarks_mean.shape)
+    assert landmarks_mean.shape[0] == config.landmark_count, print("wrong landmarks mean shape [0]:", landmarks_mean[0].shape)
+    assert landmarks_mean.shape[1] == 3, print("wrong landmarks mean shape [1]:", landmarks_mean[1].shape)
+        
+    return landmarks_all_steps, landmarks_mean
 
 def predict(dataset, config, model):#Predict landmarks for entire images.
     """Find the path of the landmark iteratively, and evaluate the results.
@@ -166,7 +177,10 @@ def predict(dataset, config, model):#Predict landmarks for entire images.
         end_time_img = time.time()
         time_elapsed[i] = end_time_img - start_time_img
         
-        #convert the scaling back to that of the original image    
+        
+        #convert the scaling back to that of the original image
+        #...이거 어떻게 함..
+        
     
 def main():
     config = Config()
