@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 from viz import support
-from utils import input_data, network, patch
+from utils import input_data, network, patch, update
 import torch
 from tqdm import tqdm
 import glob
@@ -125,6 +125,11 @@ def predict_landmarks(image, config, model):# Predict one image.
         action_ind_val, yc_val, yr_val = network.predict_cnn(patches, config, model)
         
         #Compute classification probabilities
+        action_prob = np.exp(yc_val-np.expand_dims(np.amax(yc_val, axis=1), axis=1))
+        action_prob = action_prob/np.expand_dims(np.sum(action_prob, axis=1), axis=1)
+        
+        #update landmarks
+        landmarks = update.update_landmarks(landmarks, action_prob, yr_val, config)#update rule A, B, C
         
         
     return 0,0
