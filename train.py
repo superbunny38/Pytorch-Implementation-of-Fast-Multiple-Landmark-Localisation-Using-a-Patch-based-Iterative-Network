@@ -152,7 +152,8 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     
     #Regression values (distances between predicted and GT)    
     dbs = bs - bs_gt
-    
+    assert dbs.shape[1] == config.landmark_count *3, print("wrong shape for regression output/label!")
+
     #Extract classification labels as a one-hot vector
     max_db_ind = np.argmax(np.abs(dbs), axis = 1)
     max_db = dbs[np.arange(dbs.shape[0]), max_db_ind]
@@ -168,11 +169,7 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     # print(actions_ind.dtype)
     # print(np.arange(config.batch_size))
     actions[np.ix_(np.arange(config.batch_size), actions_ind)] = 1#original code: actions = actions[np.arange(config.batch_size), actions_ind] = 1
-    # print("\n\n\n\nAfter")
-    # print(actions)
-    # print("possible")
-    # actions = actions[np.arange(config.batch_size), actions_ind] = 1
-    # print("actions:", actions)
+    assert actions.shape[1] == config.landmark_count*3*2, print("wrong shape for classification output/label!")
     
     #Shape assertions
     assert patches.shape[0] == config.batch_size, print("wrong shape of patches (1st dim)")

@@ -12,6 +12,7 @@ import time
 
 parser = argparse.ArgumentParser(description='Argparse')
 parser.add_argument('--max_test_steps', type=int, default=10, help='Number of inference steps.')
+#single landmark localisation 할 때는 num_random_init = 19 (one at center)
 parser.add_argument('--num_random_init', type=int, default=5, help='Number of random initialisations used.')
 parser.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.')
 parser.add_argument('--save_viz', type=bool, help='Whether to save visualisation.')
@@ -78,12 +79,18 @@ def predict(dataset, config):
     landmarks_mean_unscale = np.zeros((img_count, num_landmarks,3), dtype=np.float32)
     landmarks_gt_unscale = np.zeros((img_count, num_landmarks, 3), dtype=np.float32)
     images_unscale = []
+    time_elapsed = np.zeros(img_count)
     
     for i in tqdm(range(img_count), desc = "Predict landmarks iteratively..."):
         start_time_img = time.time()
         landmarks_all_steps[i], landmarks_mean[i] = predict_landmarks(images[i], config)
-    
-    print("All done!")
+        end_time_img = time.time()
+        time_elapsed[i] = end_time_img - start_time_img
+        
+        #convert the scaling back to that of the original image
+      
+        
+           
     
     
 def main():
