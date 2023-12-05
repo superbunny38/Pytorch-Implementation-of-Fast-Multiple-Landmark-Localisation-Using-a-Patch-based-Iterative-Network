@@ -85,15 +85,18 @@ def predict_cnn(patches, config, model):
 
     Returns:
         action_ind_val: predicted classification label
-        yc_val: predicted classification prob
-        yr_val: predicted regression value
+        yc_val: predicted classification prob 
+        yr_val: predicted regression value, [num_examples, num_shape_params]
     """
     model.eval()
     patches = torch.from_numpy(patches).float().to(config.device)
     patches = patches.permute(0, 3, 1, 2)
-    yc, yr = model(patches)
-    yc = nn.Softmax(dim=1)(yc)
-    action_ind_val = torch.argmax(yc, dim=1)
-    yc_val = torch.max(yc, dim=1)[0]
-    yr_val = torch.max(yr, dim=1)[0]
-    return action_ind_val, yc_val, yr_val
+    yc_val, yr_val = model(patches)
+    yc_val = nn.Softmax(dim=1)(yc_val)
+    action_ind_val = torch.argmax(yc_val, dim=1)
+
+    #shape assertions
+    assert yc_val.size()[0] == config.num_random_init+1, print("wrong shape for yc_val")
+    assert yr_val.size()[0] == config.num_random_init+1, print("wrong shape for yr_val")
+    
+    return action_ind_val.detach().cpu().numpy(), yc_val.detach().cpu().numpy(), yr_val.detach().cpu().numpy()
