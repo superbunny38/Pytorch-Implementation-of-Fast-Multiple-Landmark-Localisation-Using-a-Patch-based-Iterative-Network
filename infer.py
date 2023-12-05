@@ -89,8 +89,6 @@ def predict(dataset, config):
         
         #convert the scaling back to that of the original image
       
-        
-           
     
     
 def main():
