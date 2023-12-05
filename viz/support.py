@@ -104,3 +104,15 @@ def patch_support(images, patch_size):
     h,w = images[0].shape[0], images[0].shape[1]
     if patch_size < max(h,w)/3:
         print("It is recommended to enlarge the patch size for better performance.")
+        
+def update_rule_help(config):
+    print("==============[Update Rule Info.]==================")
+    print("Predict mode 0 (default)")
+    print(": Hard classification. Move regressed distance only in the direction with maximum probability.\n")
+    print("Predict mode 1")
+    print(": Soft classification. Multiply classification probabilities with regressed distances.\n")
+    print("Predict mode 2")
+    print(": Regression only.\n")
+    print("Predict mode 3")
+    print(": Classification only\n")
+    print("====================================================\n\n\n")

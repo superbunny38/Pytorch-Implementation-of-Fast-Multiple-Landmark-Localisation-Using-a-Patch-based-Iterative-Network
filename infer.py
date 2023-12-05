@@ -23,6 +23,7 @@ parser.add_argument('--print_info', type=bool, default=False, help='Whether to p
 parser.add_argument('--dimension', type=int, default=3, help='Dimension of the data.')
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmarks.')
 parser.add_argument('--patch_size', type=int, default=101, help='Patch size (odd), Recommended: at least 1/3 of max(height, width).')
+parser.add_argument('--update_rule_help', type=bool, default=False, help='Whether get help with info about the update rule')
 args = parser.parse_args()
 
 class Config(object):
@@ -57,6 +58,7 @@ class Config(object):
     device = args.device
     print_info = args.print_info
     dimension = args.dimension
+    update_rule_help = args.update_rule_help
 
 def landmark_initialization(landmarks, config, single_image):
     """Landmark Initialization for landmark inference.
@@ -173,6 +175,8 @@ def main():
         support.print_config_inference(config)
     if args.print_info:
         support.print_info(config)
+    if args.update_rule_help:
+        support.update_rule_help(config)
     
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting Inference]================")
