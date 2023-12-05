@@ -57,23 +57,35 @@ class Config(object):
     print_info = args.print_info
     dimension = args.dimension
 
+#original repo params: predict_landmarks(images[i], config, shape_model, sess, x, action_ind, yc, yr, keep_prob)
 def predict_landmarks(image, config):
+    """Predict landmarks iteratively.
+
+    Args:
+        image (_type_): _description_
+        config (_type_): _description_
+    """
+    num_landmarks = config.landmark_count
+    max_test_steps = config.max_test_steps
+    patch_size = config.patch_size
+    patch_r = int((patch_size - 1)/2)
+    
     
     return
 
 def predict(dataset, config):
-    """_summary_
+    """Find the path of the landmark iteratively, and evaluate the results.
 
     Args:
         dataset: dataset to predict 
         config: configurations
     """
-    num_landmarks = config.landmark_count
-    images = dataset.images
-    
-    landmarks = dataset.labels
+
+    images = dataset.images # [num_images, height, width, channels] <- pytorch version으로 바꿔야 함
+    landmarks_gt = dataset.labels
     names = dataset.names
-    pix_dim = dataset.pix_dim
+    pix_dim = dataset.pix_dim# pix_dim: mm of each voxel. [img_count, 3]
+    num_landmarks = config.landmark_count
     img_count = len(images)
     max_test_steps = config.max_test_steps
     num_examples = config.num_random_init + 1
