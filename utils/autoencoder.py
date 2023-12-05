@@ -32,7 +32,7 @@ class Autoencoder(nn.Module):
         return encoded, decoded
     
 def load_model(in_size, device):
-    autoencoder = Autoencoder(in_size).to(device)
+    autoencoder = Autoenscoder(in_size).to(device)
     return autoencoder
 
 def landmarks2b(landmarks, autoencoder, device):

@@ -5,7 +5,7 @@ import argparse
 from utils import autoencoder, input_data, network, patch, train_one_step
 from viz import support
 global args
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import glob
 
 #to track time, time functions

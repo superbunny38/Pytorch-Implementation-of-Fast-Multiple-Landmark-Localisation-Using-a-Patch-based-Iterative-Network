@@ -3,6 +3,7 @@ import argparse
 from viz import support
 from utils import input_data, network
 import torch
+from tqdm import tqdm
 
 #to track time, time functions
 from datetime import datetime
@@ -27,9 +28,9 @@ class Config(object):
     label_dir = './data/Landmarks'
     train_list_file = './data/list_train.txt'
     test_list_file = './data/list_test.txt'
-    model_dir = './ckpt/models/cnn_model.pt'
+    model_dir = './ckpt/models/04_12_18_46_26_model.pth'
     # Shape model parameters
-    shape_model_file = './shape_model/shape_model/ShapeModel.mat'
+    shape_model_file = ''
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
     sd = 3.0                # Standard deviation of shape parameters
     landmark_count = 2     # Number of landmarks
@@ -63,24 +64,26 @@ def predict(dataset, config):
         dataset: dataset to predict 
         config: configurations
     """
-    
+    num_landmarks = config.landmark_count
     images = dataset.images
-    landmarks = dataset.landmarks
+    landmarks = dataset.labels
     names = dataset.names
     pix_dim = dataset.pix_dim
     img_count = len(images)
     max_test_steps = config.max_test_steps
     num_examples = config.num_random_init + 1
     
-    landmarks_all_steps = np.zeross((img_count, max_test_steps+1, num_examples, num_landmarks,3))
+    landmarks_all_steps = np.zeros((img_count, max_test_steps+1, num_examples, num_landmarks,3))
     landmarks_mean = np.zeros((img_count, num_landmarks,3), dtype=np.float32)
     landmarks_mean_unscale = np.zeros((img_count, num_landmarks,3), dtype=np.float32)
-    landmarks_gt_unscale = np.zeros((img_count, num_landmarks, 3), dtype=np.float)
+    landmarks_gt_unscale = np.zeros((img_count, num_landmarks, 3), dtype=np.float32)
     images_unscale = []
     
-    for i in range(img_count):
+    for i in tqdm(range(img_count), desc = "Predict landmarks iteratively..."):
         start_time_img = time.time()
         landmarks_all_steps[i], landmarks_mean[i] = predict_landmarks(images[i], config)
+    
+    print("All done!")
     
     
 def main():
@@ -101,7 +104,7 @@ def main():
     
     print(f"\n\n Load trained model on {config.device} gpu...")
     model = network.cnn(num_cnn_output_c, num_cnn_output_r)
-    model.load_state_dict(torch.load(config.model_dir))
+    model.load_state_dict(torch.load(config.model_dir)['model'])
     model.to(config.device)
     print(">>successful!")
     
