@@ -179,7 +179,18 @@ def predict(dataset, config, model):#Predict landmarks for entire images.
         
         
         #convert the scaling back to that of the original image
-        #...이거 어떻게 함..
+        #난 0.5를 곱한 적이 없는데...?
+        landmarks_mean_unscale[i] = landmarks_mean[i]*pix_dim[i]/0.5
+        landmarks_gt_unscale[i] = landmarks_gt[i]*pix_dim[i]/0.5
+        images_unscale.append(scipy.ndimage.zoom(images[i][:,:,:,0],pix_dim[i]/0.5))
+        
+        print(f"Time elapsed for image {i}/{img_count}: {names[i]} {time_elapsed[i]:.2f} s")
+            
+    #Time
+    time_elapsed_mean = np.mean(time_elapsed)
+    print("Mean running time = {:.10f}s\n".format(time_elapsed_mean))
+
+    #Evaluate distance error
         
     
 def main():
