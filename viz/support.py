@@ -1,4 +1,6 @@
 from matplotlib import pyplot as plt
+import pandas as pd
+import torch
 
 def print_config_train(config):
     print("\n\n\n\n========= Configuration Info. =========")
@@ -27,6 +29,7 @@ def print_config_train(config):
     print("batch_size: {}".format(config.batch_size))
     print("dropout: {}".format(config.dropout))
     print("running on device: {}".format(config.device))
+    print("Regression Loss: {}".format(config.reg_loss_type))
     print("=====================================\n\n\n\n")
     
 
@@ -97,6 +100,7 @@ def print_config_inference(config):
     print("patch size: {}".format(config.patch_size))
     print("dimension: {}".format(config.dimension))
     print("device: {}\n".format(config.device))
+    print("save log: {}".format(config.save_log))
     print("=====================================\n\n\n\n")
 
 def patch_support(images, patch_size):
@@ -116,3 +120,12 @@ def update_rule_help(config):
     print("Predict mode 3")
     print(": Classification only\n")
     print("====================================================\n\n\n")
+
+def save_as_pt(dictionary, filename):
+    """Save dictionary containing log as pt file.
+
+    Args:
+        dictionary: dictionary containing log 
+        filename: file directory + file name to save the file
+    """
+    torch.save(dictionary, filename+".pt")#.to_csv(filename, index=False)

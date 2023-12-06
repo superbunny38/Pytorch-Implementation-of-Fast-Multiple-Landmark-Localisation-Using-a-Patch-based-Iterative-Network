@@ -38,6 +38,7 @@ parser.add_argument('--save_viz', type=bool, default=True, help='Whether to save
 parser.add_argument('--print_freq', type=int, default=1000, help='How often to print out the loss')
 parser.add_argument('--save_model', type =bool, default=True, help='Whether to save the trained model')
 parser.add_argument('--save_log',type=bool, default=False, help='Whether to save the experiment log')
+parser.add_argument('--reg_loss_type', type=str, default='mse', help='The type of regression loss')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -82,6 +83,7 @@ class Config(object):
     print_freq = args.print_freq
     save_model = args.save_model
     save_log = args.save_log
+    reg_loss_type = args.reg_loss_type
 
 def landmarks2b(landmarks, ae, config, is_train = True):
     landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
@@ -220,7 +222,8 @@ def main():
     #Define Loss for training
     criterions = dict()
     criterions['cls'] = nn.CrossEntropyLoss().to(config.device)
-    criterions['reg'] = nn.MSELoss().to(config.device)
+    if config.reg_loss_type == 'mse':
+        criterions['reg'] = nn.MSELoss().to(config.device)
     
     if config.landmark_count > 3:
         criterions['autoencoder'] = nn.BCELoss()

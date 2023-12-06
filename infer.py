@@ -3,6 +3,7 @@ import argparse
 from viz import support
 from utils import input_data, network, patch, update
 import torch
+import scipy.ndimage
 from tqdm import tqdm
 import glob
 
@@ -23,7 +24,8 @@ parser.add_argument('--print_info', type=bool, default=False, help='Whether to p
 parser.add_argument('--dimension', type=int, default=3, help='Dimension of the data.')
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmarks.')
 parser.add_argument('--patch_size', type=int, default=101, help='Patch size (odd), Recommended: at least 1/3 of max(height, width).')
-parser.add_argument('--update_rule_help', type=bool, default=False, help='Whether get help with info about the update rule')
+parser.add_argument('--update_rule_help', type=bool, default=False, help='Whether get help with info about the update rule.')
+parser.add_argument('--save_log', type=bool, default=False, help='whether to save inference log.')
 args = parser.parse_args()
 
 class Config(object):
@@ -59,7 +61,8 @@ class Config(object):
     print_info = args.print_info
     dimension = args.dimension
     update_rule_help = args.update_rule_help
-
+    save_log = args.save_log
+    
 def landmark_initialization(landmarks, config, single_image):
     """Landmark Initialization for landmark inference.
     (One should be at the center of the image)
@@ -166,7 +169,26 @@ def compute_err(landmarks, landmarks_gt, pix_dim):
     assert landmarks.shape[1] == landmarks_gt.shape[1], print("landmarks shape and landmarks_gt shape doesn't match: ", landmarks.shape, landmarks_gt.shape)
 
     num_landmarks = landmarks.shape[1]
+    err = np.sqrt(np.sum(np.square(landmarks - landmarks_gt), axis=2))
+    err_mm = np.sqrt(np.sum(np.square((landmarks-landmarks_gt)*pix_dim[:,np.newaxis,:]),axis =-1))
+    assert err.shape[1] == num_landmarks, print("wrong err shape [1]:", err[1].shape)
+    assert err_mm.shape[1] == num_landmarks, print("wrong err_mm shape [1]:", err_mm[1].shape)
+    assert err.shape == err_mm.shape, print("wrong err and err_mm shape doesn't match")
     
+    err_mm_landmark_mean = np.mean(err_mm, axis=0)
+    err_mm_landmark_std = np.std(err_mm, axis=0)
+    err_mm_mean = np.mean(err_mm)
+    err_mm_std = np.std(err_mm)
+    str = "Mean distance error in mm: "
+    for j in range(num_landmarks):
+        str += "{:.10f} ".format(err_mm_landmark_mean[j])
+    print(str)
+    str = "Std distance error in mm: "
+    for j in range(num_landmarks):
+        str += "{:.10f} ".format(err_mm_landmark_std[j])
+    print(str)
+    
+    print("Mean distance error (mm); {:.10f} \n Std distance error (mm): {:.10f} \n".format(err_mm_mean, err_mm_std))    
     
     return err, err_mm
 
@@ -216,6 +238,11 @@ def predict(dataset, config, model):#Predict landmarks for entire images.
     #Evaluate distance error
     err, err_mm = compute_err(landmarks_mean, landmarks_gt, pix_dim)
     
+    write_dict = {"names":names, "err":err, "err_mm":err_mm, "landmarks_mean_unscale":landmarks_mean_unscale}
+    dt_string = datetime.now().strftime("%d_%m_%H_%M").replace('/','.')#day month hour minute
+    support.save_as_pt(write_dict, "./ckpt/logs/inference_"+dt_string)
+    
+      
 def main():
     config = Config()
     
