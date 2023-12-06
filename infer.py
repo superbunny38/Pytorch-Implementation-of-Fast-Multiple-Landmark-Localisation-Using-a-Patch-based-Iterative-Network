@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 from viz import support
-from utils import input_data, network, patch, update
+from utils import input_data, network, patch, update, visual, plane
 import torch
 import scipy.ndimage
 from tqdm import tqdm
@@ -17,7 +17,7 @@ parser.add_argument('--max_test_steps', type=int, default=10, help='Number of in
 #single landmark localisation 할 때는 num_random_init = 19 (one at center)
 parser.add_argument('--num_random_init', type=int, default=5, help='Number of random initialisations used.')
 parser.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.')
-parser.add_argument('--save_viz', type=bool, help='Whether to save visualisation.')
+parser.add_argument('--save_viz', type=bool, default = True, help='Whether to save visualisation.')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 parser.add_argument('--device', type=str, default='cuda:0', help='Device to run gpu on.')
 parser.add_argument('--print_info', type=bool, default=False, help='Whether to print out information about this code.')
@@ -192,12 +192,14 @@ def compute_err(landmarks, landmarks_gt, pix_dim):
     
     return err, err_mm
 
-def predict(dataset, config, model):#Predict landmarks for entire images.
+def predict(dataset, config, model, train = False):#Predict landmarks for entire images.
     """Find the path of the landmark iteratively, and evaluate the results.
 
     Args:
         dataset: dataset to predict 
         config: configurations
+        model: model to predict
+        train: True: train or False: test dataset
     """
 
     images = dataset.images # [num_images, height, width, channels] <- pytorch version으로 바꿔야 함
@@ -241,6 +243,18 @@ def predict(dataset, config, model):#Predict landmarks for entire images.
     write_dict = {"names":names, "err":err, "err_mm":err_mm, "landmarks_mean_unscale":landmarks_mean_unscale}
     dt_string = datetime.now().strftime("%d_%m_%H_%M").replace('/','.')#day month hour minute
     support.save_as_pt(write_dict, "./ckpt/logs/inference_"+dt_string)
+    
+    
+    if config.save_viz:
+        print("Show visualisation...")
+        for i in range(img_count):
+            print("Processing visualisation {}/{}: {}".format(i+1, img_count, names[i]))
+            # visual.plot_landmarks_2d('./ckpt/landmarks_visual2D', train, names[i], images_unscale[i],
+            #                          landmarks_mean_unscale[i], landmarks_gt_unscale[i])
+            visual.plot_landmarks_3d('./ckpt/landmarks_visual3D', train, names[i], landmarks_mean[i],
+                                     landmarks_gt[i], images[i].shape)
+            visual.plot_landmarks_path('./ckpt/landmark_path', train, names[i], landmarks_all_steps[i],
+                                       landmarks_gt[i], images[i].shape)
     
       
 def main():
