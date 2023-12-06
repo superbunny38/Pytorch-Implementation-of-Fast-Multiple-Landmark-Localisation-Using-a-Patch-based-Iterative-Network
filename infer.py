@@ -147,14 +147,28 @@ def predict_landmarks(image, config, model):# Predict one image.
         
     return landmarks_all_steps, landmarks_mean
 
-def compute_err(landmarks_mean, landmarks_gt, pix_dim):
+def compute_err(landmarks, landmarks_gt, pix_dim):
     """Compute error between predicted landmarks and ground truth landmarks.
 
     Args:
-        landmarks_mean: _description_
-        landmarks_gt (_type_): _description_
-        pix_dim (_type_): _description_
+        landmarks: Predicted landmarks [img_count, num_landmarks, 3].
+        landmarks_gt: Ground truth landmarks. [img_count, num_landmarks, 3]
+        pix_dim: Pixel spacing. [img_count, 3]
+        
+    Returns:
+      err: distance error in voxel. [img_count, num_landmarks]
+      err_mm: distance error in mm. [img_count, num_landmarks]
     """
+    #Shape assertions
+    assert landmarks.shape[2] == 3, print("wrong landmarks shape [2]:", landmarks[2].shape)
+    assert landmarks_gt.shape[2] == 3, print("wrong landmarks_gt shape [2]:", landmarks_gt[2].shape)
+    assert landmarks.shape[0] == landmarks_gt.shape[0], print("landmarks shape and landmarks_gt shape doesn't match: ", landmarks.shape, landmarks_gt.shape)
+    assert landmarks.shape[1] == landmarks_gt.shape[1], print("landmarks shape and landmarks_gt shape doesn't match: ", landmarks.shape, landmarks_gt.shape)
+
+    num_landmarks = landmarks.shape[1]
+    
+    
+    return err, err_mm
 
 def predict(dataset, config, model):#Predict landmarks for entire images.
     """Find the path of the landmark iteratively, and evaluate the results.
