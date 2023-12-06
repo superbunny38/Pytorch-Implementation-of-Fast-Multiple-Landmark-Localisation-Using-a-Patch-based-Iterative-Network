@@ -7,7 +7,8 @@ import torch.optim
 import torchvision.transforms as transforms
 
 
-def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers):
+
+def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, optimizers):
     """
     Args:
         patches_train: x (input), [batch_size, box_size, box_size, 3*num_landmarks]
@@ -30,7 +31,7 @@ def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers)
     # print(f"\nregression label: {yr_[0]}, regression prediction: {yr[0]}")
     
     ### Calculate Loss
-    loss_c = criterions['cls'](yc_,yc)
+    loss_c = criterions['cls'](yc_,logits = yc)
     loss_r = criterions['reg'](yr_,yr)
     loss = config.alpha*loss_c + (1-config.alpha)*loss_r
     
@@ -42,5 +43,14 @@ def train_pairs(patches_train, yc_, yr_, config, models, criterions, optimizers)
     loss.backward()
     optimizers['optimizer'].step()
     
+    #get predictions
+    
     #cls loss, reg loss, total loss   
+    if step_i%config.print_freq == 0:
+        action_ind = torch.argmax(yc)
+        action_prob = nn.Softmax()(yc)
+        print("action_ind:",action_ind.cpu().detach().numpy())
+        print("gt cls:",torch.argmax(yc_).cpu().detach().numpy())
+        print("prob:", action_prob.cpu().detach().numpy())
+        
     return loss_c.item(), loss_r.item(), loss.item()

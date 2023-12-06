@@ -1,6 +1,9 @@
 from matplotlib import pyplot as plt
 import pandas as pd
 import torch
+import glob
+import os
+
 
 def print_config_train(config):
     print("\n\n\n\n========= Configuration Info. =========")
@@ -53,17 +56,18 @@ def print_info(config):
     
 
 def save_loss_plot(save_losses):
+    
     plt.subplot(131)
     plt.title("Total Loss")
-    plt.plot(save_losses['save_loss'])
+    plt.plot(save_losses['save_loss'][1:])
     plt.xlabel("Iterations")
     plt.subplot(132)
     plt.title("Classification Loss")
-    plt.plot(save_losses['save_loss_c'])
+    plt.plot(save_losses['save_loss_c'][1:])
     plt.xlabel("Iterations")
     plt.subplot(133)
     plt.title("Regression Loss")
-    plt.plot(save_losses['save_loss_r'])
+    plt.plot(save_losses['save_loss_r'][1:])
     plt.xlabel("Iterations")
     plt.savefig("trace_loss.png")
     
@@ -129,3 +133,8 @@ def save_as_pt(dictionary, filename):
         filename: file directory + file name to save the file
     """
     torch.save(dictionary, filename+".pt")#.to_csv(filename, index=False)
+    
+def get_the_latest_ckpt(ckpt_dir = "./ckpt/models"):
+    list_of_files = glob.glob(ckpt_dir + "/*.pth")
+    latest_file = max(list_of_files, key=os.path.getctime)
+    return latest_file

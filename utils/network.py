@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch
 
 
-
 class cnn(nn.Module):
     def __init__(self, num_output_c, num_output_r, prob = 0.5):
         super(cnn, self).__init__()
@@ -92,11 +91,15 @@ def predict_cnn(patches, config, model):
     patches = torch.from_numpy(patches).float().to(config.device)
     patches = patches.permute(0, 3, 1, 2)
     yc_val, yr_val = model(patches)
-    yc_val = nn.Softmax(dim=1)(yc_val)
+    # yc_val = nn.Softmax(dim=1)(yc_val) <- before softmax라고 함!
     action_ind_val = torch.argmax(yc_val, dim=1)
 
+    # Compute classification probabilities
+    yc_val = yc_val.detach().cpu().numpy()
+    # action_prob = np.exp(yc_val - np.expand_dims(np.amax(yc_val, axis=1), 1))
+    # action_prob = action_prob / np.expand_dims(np.sum(action_prob, axis=1), 1)  # action_prob=[num_examples, 2*num_shape_params]
     #shape assertions
     assert yc_val.size()[0] == config.num_random_init+1, print("wrong shape for yc_val")
     assert yr_val.size()[0] == config.num_random_init+1, print("wrong shape for yr_val")
     
-    return action_ind_val.detach().cpu().numpy(), yc_val.detach().cpu().numpy(), yr_val.detach().cpu().numpy()
+    return action_ind_val.detach().cpu().numpy(), yc_val, yr_val.detach().cpu().numpy()

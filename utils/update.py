@@ -2,6 +2,32 @@
 
 import numpy as np
 
+def get_p_max(action_prob,config):
+    """Get P_max for Rule C
+
+    Args:
+        action_prob: Prob (cls output before softmax)
+
+    Returns:
+        P_max
+    """
+    p_max = []
+    for candi in action_prob:#action_prob: (6,12) == [n_candidates, cls_output]
+        p_max_candi = []
+        for landmark_idx in range(config.landmark_count):
+            tmp_p_max = []
+            for dir_idx in range(0,6,2):
+                tmp_p_max.append(max(candi[(landmark_idx+1)*dir_idx],candi[(landmark_idx+1)*dir_idx+1]))
+            p_max_candi.append(tmp_p_max)
+        p_max.append(p_max_candi)
+    return np.array(p_max)
+
+def reshape_yr_val(yr_val):
+    reshaped_yr_val = []
+    for candi in yr_val:
+        reshaped_yr_val.append(np.array([candi[:3],candi[3:]]))
+    return np.array(reshaped_yr_val)
+
 def update_landmarks(landmarks, action_prob, yr_val, config):#update rule A,B,C
     """PIN update rule A,B,C
     Update x_t -> x_{t-1}
@@ -18,10 +44,17 @@ def update_landmarks(landmarks, action_prob, yr_val, config):#update rule A,B,C
         landmarks[row_ind,ind] = landmarks[row_ind,ind] - yr_val[row_ind,ind]
 
     elif config.predict_mode == 1:
-        #landmarks = landmarks - yr_val*np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1],2)), axis =2)
-        #above code throws an error
-        pass
+        landmarks = landmarks - yr_val * np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1], 2)), axis=2)
     
+    elif config.predict_mode == 4:#coded by me! (inefficient)
+        # print("landmarks shape: ",landmarks.shape) landmarks shape:  (6, 2, 3)
+        # print("action_prob shape: ",action_prob.shape) action_prob shape:  (6, 12)
+        # print("yr_val shape: ",yr_val.shape) yr_val shape:  (6, 6) == d
+        weighted_move = get_p_max(action_prob,config)
+        # print("weighted_move shape: ", weighted_move.shape)
+        landmarks = landmarks + reshape_yr_val(yr_val)*weighted_move
+        # landmarks = landmarks - yr_val*np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1],2)), axis =2)
+
     elif config.predict_mode == 2:
         landmarks = landmarks - yr_val
 

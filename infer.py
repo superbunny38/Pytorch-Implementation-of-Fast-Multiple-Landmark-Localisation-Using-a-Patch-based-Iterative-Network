@@ -13,7 +13,7 @@ from datetime import timedelta
 import time
 
 parser = argparse.ArgumentParser(description='Argparse')
-parser.add_argument('--max_test_steps', type=int, default=10, help='Number of inference steps. (Recommended: 10 for Rule B and Rule C, 350 for Rule A)')
+parser.add_argument('--max_test_steps', type=int, default=30, help='Number of inference steps. (Recommended: 10 for Rule B and Rule C, 350 for Rule A)')
 #single landmark localisation 할 때는 num_random_init = 19 (one at center)
 parser.add_argument('--num_random_init', type=int, default=5, help='Number of random initialisations used.')
 parser.add_argument('--predict_mode', type=int, default=1, help='How the new patch position is computed.')
@@ -26,6 +26,8 @@ parser.add_argument('--landmark_count', type=int, default=2, help='Number of lan
 parser.add_argument('--patch_size', type=int, default=101, help='Patch size (odd), Recommended: at least 1/3 of max(height, width).')
 parser.add_argument('--update_rule_help', type=bool, default=False, help='Whether get help with info about the update rule.')
 parser.add_argument('--save_log', type=bool, default=False, help='whether to save inference log.')
+parser.add_argument('--get_latest_trained_model', type = bool, default = True, help='Whether to get the latest trained model.')
+parser.add_argument('--model_dir', type = str, default = './ckpt/models/04_12_18_46_26_model.pth', help = 'Directory to save the trained model.')
 args = parser.parse_args()
 
 class Config(object):
@@ -35,7 +37,12 @@ class Config(object):
     label_dir = './data/Landmarks'
     train_list_file = './data/list_train.txt'
     test_list_file = './data/list_test.txt'
-    model_dir = './ckpt/models/04_12_18_46_26_model.pth'
+    if args.get_latest_trained_model:
+        model_dir = support.get_the_latest_ckpt()
+        print("model dir: {}".format(model_dir))
+    else:
+        model_dir = args.model_dir
+    
     # Shape model parameters
     shape_model_file = ''
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
@@ -127,6 +134,7 @@ def predict_landmarks(image, config, model):# Predict one image.
     
     #Find path of landmark iteratively
     for jdx in range(config.max_test_steps):
+        
         action_ind_val, yc_val, yr_val = network.predict_cnn(patches, config, model)
         
         #Compute classification probabilities
@@ -283,7 +291,7 @@ def main():
     model.to(config.device)
     print(">>successful!")
     
-    print("\n\n Starting prediction...")
+    print(f"\n\n Starting prediction with model {config.model_dir.split('/')[-1]}...")
     predict(test_dataset, config, model)
 
 

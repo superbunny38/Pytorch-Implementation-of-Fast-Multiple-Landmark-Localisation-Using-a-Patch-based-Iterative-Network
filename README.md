@@ -22,10 +22,14 @@
 
 2. I have referred to the codes from [the original repository](https://github.com/yuanwei1989/landmark-detection), so there are a lot of codes in common. I just made the code in Pytorch & runnable with the latest version of libraries needed.
 
-(+3. Could be minor errors :upside_down_face: :sweat_smile:)
+3. The plot for loss doesn't show the loss at iteration 0
+
+(+4. Could be minor errors :upside_down_face: :sweat_smile:)
 
 - To-dos:
     - Finish infer.py
     - scheduler added (Not in the original paper)
     - autoencoder enabled (Not in the original paper)
     - augmentation added (Not in the original paper)
+    - regression loss를 기준으로 training 멈출 시점을 정하는게 더 효과적으로 보임
+    - best model saving (Not in the original paper)

@@ -17,6 +17,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim
+import torch.nn.functional as F
 
 
 parser = argparse.ArgumentParser(description='Argparse')
@@ -182,9 +183,14 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     return patches, actions, dbs, bs
 
 
+  
 
 def main():
     config = Config()
+    
+    #ref: https://gist.github.com/EdisonLeeeee/f67205683603f9c11b2940c71557410b
+    def softmax_cross_entropy_with_logits(labels, logits, dim=-1,config = config):
+        return torch.mean((-labels * F.log_softmax(logits, dim=dim)).sum(dim=dim)).to(config.device) 
     
     if args.print_config:
         support.print_config_train(config)
@@ -221,7 +227,7 @@ def main():
     print("\n\nLoading Loss and optimizers for shape model and PIN... ")
     #Define Loss for training
     criterions = dict()
-    criterions['cls'] = nn.CrossEntropyLoss().to(config.device)
+    criterions['cls'] = softmax_cross_entropy_with_logits
     if config.reg_loss_type == 'mse':
         criterions['reg'] = nn.MSELoss().to(config.device)
     
@@ -231,7 +237,7 @@ def main():
     
     #Define Optimizer
     optimizers = dict()
-    optimizer = torch.optim.Adam(model.parameters(), lr = config.learning_rate)
+    optimizer = torch.optim.Adam(models['model'].parameters(), lr = config.learning_rate)
     optimizers['optimizer'] = optimizer
     
     if config.landmark_count > 3:
@@ -256,13 +262,14 @@ def main():
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        loss_c, loss_r, loss = train_one_step.train_pairs(patches, actions, dbs, config, models, criterions, optimizers)
+        loss_c, loss_r, loss = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers)
         save_loss_c.append(loss_c)
         save_loss_r.append(loss_r)
         save_loss.append(loss)
         
         if step_i%config.print_freq == 0:
             print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))
+            
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
