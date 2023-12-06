@@ -147,6 +147,15 @@ def predict_landmarks(image, config, model):# Predict one image.
         
     return landmarks_all_steps, landmarks_mean
 
+def compute_err(landmarks_mean, landmarks_gt, pix_dim):
+    """Compute error between predicted landmarks and ground truth landmarks.
+
+    Args:
+        landmarks_mean: _description_
+        landmarks_gt (_type_): _description_
+        pix_dim (_type_): _description_
+    """
+
 def predict(dataset, config, model):#Predict landmarks for entire images.
     """Find the path of the landmark iteratively, and evaluate the results.
 
@@ -191,7 +200,7 @@ def predict(dataset, config, model):#Predict landmarks for entire images.
     print("Mean running time = {:.10f}s\n".format(time_elapsed_mean))
 
     #Evaluate distance error
-        
+    err, err_mm = compute_err(landmarks_mean, landmarks_gt, pix_dim)
     
 def main():
     config = Config()
