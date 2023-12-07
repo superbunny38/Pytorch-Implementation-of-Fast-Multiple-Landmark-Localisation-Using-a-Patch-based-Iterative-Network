@@ -86,16 +86,6 @@ class Config(object):
     save_log = args.save_log
     reg_loss_type = args.reg_loss_type
 
-def landmarks2b(landmarks, ae, config, is_train = True):
-    landmarks = np.reshape(landmarks, (landmarks.shape[0], landmarks.shape[1]*landmarks.shape[2]))  # Reshape to [num_examples, 3*num_landmarks]
-    landmarks = torch.from_numpy(landmarks).float().to(config.device)#convert to pytorch tensor
-    # print(landmarks.size())#[num_examples, 3*num_landmarks] == [1,3*2]
-    
-    ae.train()
-    bs_gt = ae.encoder(landmarks)
-    decoded_landmarks = ae.decoder(bs_gt)
-    return bs_gt, decoded_landmarks
-
 def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_output, models, is_train = True):
     '''
     Args:
@@ -121,14 +111,11 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     # print("labels:",labels)
     # print("labels shape: {}".format(labels.shape)) <- 맞음
     
-    if config.landmark_count > 3:
-        bs_gt, decoded_landmarks = landmarks2b(labels, models['shape_model'], config, is_train)
-        landmarks = models['shape_model'].decoder(bs_gt)
-        
-    else:#num_landmarks가 3개 이하면 compression 필요 없어보임
-        bs_gt = labels.reshape(labels.shape[0],-1)
-        decoded_landmarks = labels
-        landmarks = labels
+
+    # else:#num_landmarks가 3개 이하면 compression 필요 없어보임
+    bs_gt = labels.reshape(labels.shape[0],-1)
+    decoded_landmarks = labels
+    landmarks = labels
         
     num_landmarks = config.landmark_count
     box_r = int((config.box_size-1)/2)
@@ -181,9 +168,6 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     assert dbs.shape[0] == config.batch_size, print("wrong shape of dbs (1st dim)")
     assert dbs.shape[1] == num_regression_output, print("wrong shape of db (2nd dim)")
     return patches, actions, dbs, bs
-
-
-  
 
 def main():
     config = Config()
@@ -263,12 +247,12 @@ def main():
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
         loss_c, loss_r, loss = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers)
-        save_loss_c.append(loss_c)
-        save_loss_r.append(loss_r)
-        save_loss.append(loss)
         
         if step_i%config.print_freq == 0:
             print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))
+            save_loss_c.append(loss_c)
+            save_loss_r.append(loss_r)
+            save_loss.append(loss)
             
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯

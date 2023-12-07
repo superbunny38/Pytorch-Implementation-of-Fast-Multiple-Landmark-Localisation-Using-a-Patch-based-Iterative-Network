@@ -44,15 +44,19 @@ def update_landmarks(landmarks, action_prob, yr_val, config):#update rule A,B,C
         landmarks[row_ind,ind] = landmarks[row_ind,ind] - yr_val[row_ind,ind]
 
     elif config.predict_mode == 1:
-        landmarks = landmarks - yr_val * np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1], 2)), axis=2)
-    
+        # print("lanmarks shape: ",landmarks.shape)
+        # print("yr_val shape: ",yr_val.shape)
+        
+        updated_landmarks = landmarks.reshape(config.num_random_init+1,-1) - yr_val * np.amax(np.reshape(action_prob, (landmarks.reshape(config.num_random_init+1,-1).shape[0], landmarks.reshape(config.num_random_init+1,-1).shape[1], 2)), axis=2)
+        landmarks = updated_landmarks.reshape(landmarks.shape)
+        
     elif config.predict_mode == 4:#coded by me! (inefficient)
         # print("landmarks shape: ",landmarks.shape) landmarks shape:  (6, 2, 3)
         # print("action_prob shape: ",action_prob.shape) action_prob shape:  (6, 12)
         # print("yr_val shape: ",yr_val.shape) yr_val shape:  (6, 6) == d
         weighted_move = get_p_max(action_prob,config)
         # print("weighted_move shape: ", weighted_move.shape)
-        landmarks = landmarks + reshape_yr_val(yr_val)*weighted_move
+        landmarks = landmarks - reshape_yr_val(yr_val)*weighted_move
         # landmarks = landmarks - yr_val*np.amax(np.reshape(action_prob, (landmarks.shape[0], landmarks.shape[1],2)), axis =2)
 
     elif config.predict_mode == 2:
