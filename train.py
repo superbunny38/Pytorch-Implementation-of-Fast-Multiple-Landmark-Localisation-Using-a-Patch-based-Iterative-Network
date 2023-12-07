@@ -86,7 +86,7 @@ class Config(object):
     save_log = args.save_log
     reg_loss_type = args.reg_loss_type
 
-def get_train_pairs(batch_size, images, labels, config, num_actions, num_regression_output, models, is_train = True):
+def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs):
     '''
     Args:
         batch_size: Number of examples in a mini-batch
@@ -129,9 +129,10 @@ def get_train_pairs(batch_size, images, labels, config, num_actions, num_regress
     
     #Randomly sampled x from V
     #dGT = xGT - x
-    bounds = config.sd*np.sqrt(config.landmark_count)
-    bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
-    
+    if step_i == 0:
+        bounds = config.sd*np.sqrt(config.landmark_count)
+        bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
+        
     #Extract image patch
     # print("image size: {}".format(np.array(images).shape))
     for i in range(config.batch_size):
@@ -180,7 +181,8 @@ def main():
         support.print_config_train(config)
     if args.get_info:
         support.print_info(config)
-        
+    
+    bs = None
     print("\n\n\n\n\n\n\n\n\n\n")
     print("================[Starting training]================")
     print("\n\nLoading shape model(=autoencoder) and PIN... ")
@@ -236,17 +238,17 @@ def main():
     
     for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
         #generate training pairs via patch extraction
-        patches, actions, dbs, bs = get_train_pairs(config.batch_size,
+        patches, actions, dbs, bs = get_train_pairs(step_i,config.batch_size,
                                                     train_dataset.images,
                                                     train_dataset.labels,
                                                     config,
                                                     num_cnn_output_c,
                                                     num_cnn_output_r,
-                                                    models)
+                                                    models, bs)
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        loss_c, loss_r, loss = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers)
+        loss_c, loss_r, loss, bs = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs)
         
         if step_i%config.print_freq == 0:
             print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))

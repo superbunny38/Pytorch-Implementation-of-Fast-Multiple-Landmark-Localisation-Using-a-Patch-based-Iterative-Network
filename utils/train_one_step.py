@@ -5,10 +5,10 @@ import torch
 import torch.nn as nn
 import torch.optim
 import torchvision.transforms as transforms
+import numpy as np
 
 
-
-def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, optimizers):
+def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, optimizers, bs):
     """
     Args:
         patches_train: x (input), [batch_size, box_size, box_size, 3*num_landmarks]
@@ -25,7 +25,7 @@ def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, opt
     
     yc_, yr_ = torch.from_numpy(yc_).float().to(config.device), torch.from_numpy(yr_).float().to(config.device)
     yc, yr = models['model'](patches_train)
-    yc = nn.Softmax(dim=1)(yc)
+    # yc = nn.Softmax(dim=1)(yc)
     
     # print(f"\n\n\nclassification label: {yc_[0]}, classifcation prediction: {yc[0]}")
     # print(f"\nregression label: {yr_[0]}, regression prediction: {yr[0]}")
@@ -46,11 +46,25 @@ def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, opt
     #get predictions
     
     #cls loss, reg loss, total loss   
+    
+    action_ind = torch.argmax(yc)
+    action_prob = nn.Softmax()(yc)
+    
+    yr = yr.detach().cpu().numpy()
+    yr_ = yr_.detach().cpu().numpy()
+    yc = yc.detach().cpu().numpy()
+    yc_ = yc_.detach().cpu().numpy()
+    
+    action_prob = np.exp(yc - np.expand_dims(np.amax(yc, axis=1), 1))
+    action_prob = action_prob / np.expand_dims(np.sum(action_prob, axis=1), 1)  # action_prob=[num_examples, 2*num_shape_params]
+    
+    bs = bs - yr*np.amax(np.reshape(action_prob,(bs.shape[0], bs.shape[1],2)),axis = 2)
+    
     if step_i%config.print_freq == 0:
-        action_ind = torch.argmax(yc)
-        action_prob = nn.Softmax()(yc)
+        print("========Is regression right????========")
+        print("predicted dbs: {}".format(yr[:4]))
+        print("GT dbs: {}".format(yr_[:4]))
         print("action_ind:",action_ind.cpu().detach().numpy())
-        print("gt cls:",torch.argmax(yc_).cpu().detach().numpy())
-        print("prob:", action_prob.cpu().detach().numpy())
+        print("gt cls:",np.argmax(yc_))
         
-    return loss_c.item(), loss_r.item(), loss.item()
+    return loss_c.item(), loss_r.item(), loss.item(), bs

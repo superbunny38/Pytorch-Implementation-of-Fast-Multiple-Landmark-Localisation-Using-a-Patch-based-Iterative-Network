@@ -32,7 +32,7 @@ class CTPDataset(torch.utils.data.Dataset):
         return self.num_examples
     
     def __getitem__(self, index):#train_pix_dim도 로딩해줘야하나?
-        pass
+        return self.images[index], self.labels[index]
 
 def extract_image(filename):
     """Extract the image into a 3D numpy array [x, y, z].

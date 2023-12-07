@@ -51,7 +51,10 @@ class cnn(nn.Module):
             nn.Linear(in_features=512, out_features=1024),
             nn.ReLU(inplace=True),
             nn.Dropout2d(self.keep_prob),
-            nn.Linear(in_features=1024, out_features=1024),
+            nn.Linear(in_features=1024, out_features=2048),
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=2048, out_features=1024),
             nn.ReLU(inplace=True),
             nn.Dropout2d(self.keep_prob),
             nn.Linear(in_features=1024, out_features=num_output_r)
