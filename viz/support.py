@@ -55,19 +55,19 @@ def print_info(config):
     print("================================")
     
 
-def save_loss_plot(save_losses):
+def save_loss_plot(save_losses, trace_from = 5):
     
     plt.subplot(131)
     plt.title("Total Loss")
-    plt.plot(save_losses['save_loss'][1:])
+    plt.plot(save_losses['save_loss'][trace_from:])
     plt.xlabel("Iterations")
     plt.subplot(132)
     plt.title("Classification Loss")
-    plt.plot(save_losses['save_loss_c'][1:])
+    plt.plot(save_losses['save_loss_c'][trace_from:])
     plt.xlabel("Iterations")
     plt.subplot(133)
     plt.title("Regression Loss")
-    plt.plot(save_losses['save_loss_r'][1:])
+    plt.plot(save_losses['save_loss_r'][trace_from:])
     plt.xlabel("Iterations")
     plt.savefig("trace_loss.png")
     
@@ -138,3 +138,9 @@ def get_the_latest_ckpt(ckpt_dir = "./ckpt/models"):
     list_of_files = glob.glob(ckpt_dir + "/*.pth")
     latest_file = max(list_of_files, key=os.path.getctime)
     return latest_file
+
+def write_loss(losses, log_dir, dt_string):
+    df = pd.DataFrame.from_dict(losses)
+    with open(os.path.join(log_dir, f"train_loss_{dt_string}.txt"), "a") as f:
+        df_string = df.to_string()
+        f.write(df_string)

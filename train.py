@@ -280,8 +280,10 @@ def main():
     
     
     ### Saving the results of the training ###
+    dt_string = datetime.now().strftime("%d_%m_%H_%M_%S").replace('/','.')
     if config.save_viz:
         support.save_loss_plot(losses)
+        support.write_loss(losses, "./ckpt/logs/",dt_string)
     if config.save_log:
         save_log_dict = dict()
         save_log_dict['elapsed_time'] = elapsed_time
@@ -289,7 +291,6 @@ def main():
         save_dict = dict()
         save_dict['model'] = models['model'].state_dict()
         save_dict['optimizer'] = optimizers['optimizer'].state_dict()
-        dt_string = datetime.now().strftime("%d_%m_%H_%M_%S").replace('/','.')
         torch.save(save_dict, config.save_model_dir + dt_string + "_model.pth")
     
 
