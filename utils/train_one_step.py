@@ -25,7 +25,7 @@ def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, opt
     
     yc_, yr_ = torch.from_numpy(yc_).float().to(config.device), torch.from_numpy(yr_).float().to(config.device)
     yc, yr = models['model'](patches_train)
-    # yc = nn.Softmax(dim=1)(yc)
+    yc = nn.Softmax(dim=1)(yc)
     
     # print(f"\n\n\nclassification label: {yc_[0]}, classifcation prediction: {yc[0]}")
     # print(f"\nregression label: {yr_[0]}, regression prediction: {yr[0]}")
@@ -60,11 +60,18 @@ def train_pairs(step_i, patches_train, yc_, yr_, config, models, criterions, opt
     
     bs = bs - yr*np.amax(np.reshape(action_prob,(bs.shape[0], bs.shape[1],2)),axis = 2)
     
+    udpated_predicted_landmarks = bs.reshape((config.batch_size,config.landmark_count, -1))
+    udpated_predicted_landmarks = np.mean(udpated_predicted_landmarks,axis = 0)
+    assert udpated_predicted_landmarks.shape == (config.landmark_count, 3)
+    
     if step_i%config.print_freq == 0:
         print("========Is regression right????========")
         print("predicted dbs: {}".format(yr[:4]))
         print("GT dbs: {}".format(yr_[:4]))
         print("action_ind:",action_ind.cpu().detach().numpy())
         print("gt cls:",np.argmax(yc_))
-        
-    return loss_c.item(), loss_r.item(), loss.item(), bs
+        for i in range(config.landmark_count):
+            print("predicted landmark {}: {}".format(i, udpated_predicted_landmarks[i,:]))
+            print("GT landmark {}: {}".format(i, config.gt_label_cord[0][i]))
+        print()
+    return models['model'], loss_c.item(), loss_r.item(), loss.item(), bs

@@ -3,7 +3,9 @@
 import numpy as np
 from . import patch
 import torch
+import torch.nn as nn
 import scipy.ndimage
+
 
 def get_p_max(action_prob,config):
     """Get P_max for Rule C
@@ -77,7 +79,7 @@ def update_landmarks(landmarks, action_prob, yr_val, config):#update rule A,B,C
     return landmarks
 
 
-def predict_cnn(iter_idx, patches, yc_gt, yr_gt, model, config):
+def predict_cnn(iter_idx, patches, yc_gt, yr_gt, model, config, is_softmax = True):
     """Shape analysis
 
     yr_val: (5,6)
@@ -87,7 +89,13 @@ def predict_cnn(iter_idx, patches, yc_gt, yr_gt, model, config):
     patches_eval = patches_eval.permute(0, 3, 1, 2)
     
     yc_val,yr_val = model(patches_eval)
+    
+    if is_softmax:
+        yc_val = nn.Softmax(dim = 1)(yc_val)
+    
     yc_val,yr_val = yc_val.detach().cpu().numpy(), yr_val.detach().cpu().numpy()
+    
+    
     
     # Compute classification probabilities
     action_prob = np.exp(yc_val - np.expand_dims(np.amax(yc_val, axis=1), 1))
@@ -139,6 +147,8 @@ def predict_landmarks(dataset, config, model, train = True):
     patch_r = int((patch_size - 1) / 2)
     img_count = dataset.__len__()
     
+    landmark_all_steps_ret = np.zeros((img_count, max_test_steps+1,config.num_random_init, num_landmarks, 3))
+    final_landmarks_ret = np.zeros((img_count, num_landmarks, 3))
     if train:
         for img_idx in range(dataset.__len__()):
             img, label = dataset.__getitem__(img_idx)
@@ -165,7 +175,17 @@ def predict_landmarks(dataset, config, model, train = True):
                 
                 for candi_idx in range(config.num_random_init):
                     patches[candi_idx] = patch.extract_patch_all_landmarks(img, hat_landmarks.reshape(config.num_random_init,config.landmark_count,3)[candi_idx], patch_r)
+
+                print(f"====iteration {iter_idx}=====")
+                print(np.mean(hat_landmarks, axis = 0).reshape(config.landmark_count, -1))
+            # print("landmark_all_steps shape:")
+            # print(landmark_all_steps.shape)
+            # print("hat_landmarks shape:")
+            # print(hat_landmarks.shape)
+            final_landmarks = np.mean(hat_landmarks, axis = 0).reshape(config.landmark_count, -1)
+            # print("final_landmarks shape:", final_landmarks.shape)
+            # final_landmarks = np.mean(landmark_all_steps[-1,:,:,:], axis = 0)
+            final_landmarks_ret[img_idx] = final_landmarks
+            landmark_all_steps_ret[img_idx] = landmark_all_steps
             
-            final_landmarks = np.mean(landmark_all_steps[-1,:,:,:], axis = 0)
-            
-            return final_landmarks, landmark_all_steps
+        return final_landmarks_ret, landmark_all_steps_ret

@@ -86,7 +86,7 @@ class Config(object):
     save_log = args.save_log
     reg_loss_type = args.reg_loss_type
 
-def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs):
+def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs, random_init = True):
     '''
     Args:
         batch_size: Number of examples in a mini-batch
@@ -129,7 +129,7 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
     
     #Randomly sampled x from V
     #dGT = xGT - x
-    if step_i == 0:
+    if step_i == 0 or random_init:
         bounds = config.sd*np.sqrt(config.landmark_count)
         bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
         
@@ -207,6 +207,8 @@ def main():
     train_dataset, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
     print(">>successful!")
     
+    config.gt_label_cord = train_dataset.labels
+    
     support.patch_support(train_dataset.images, config.box_size)
     support.patch_support(test_dataset.images, config.box_size)
     
@@ -248,7 +250,7 @@ def main():
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        loss_c, loss_r, loss, bs = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs)
+        models['model'], loss_c, loss_r, loss, bs = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs)
         
         if step_i%config.print_freq == 0:
             print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))

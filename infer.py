@@ -149,14 +149,13 @@ def main():
 
     print("\n\nComputing errors...")
     landmark_idx = 1
-    for pos_hat, pos_gt in zip(final_predicted_landmarks, train_dataset.labels[0]):
+    for pos_hat, pos_gt in zip(final_predicted_landmarks[0], train_dataset.labels[0]):
         print(f"predicted landmark {landmark_idx} position:",pos_hat)
         print(f"GT landmark {landmark_idx} position:",pos_gt)
         landmark_idx +=1
         print()
         
-        
-        
+
     print(">>successful!")
     
     #Save visualizations
