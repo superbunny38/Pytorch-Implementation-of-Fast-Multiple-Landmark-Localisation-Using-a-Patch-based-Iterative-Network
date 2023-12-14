@@ -25,11 +25,3 @@
 3. The plot for loss doesn't show the loss at iteration 0
 
 (+4. Could be minor errors :upside_down_face: :sweat_smile:)
-
-- To-dos:
-    - Finish infer.py
-    - scheduler added (Not in the original paper)
-    - autoencoder enabled (Not in the original paper)
-    - augmentation added (Not in the original paper)
-    - regression loss를 기준으로 training 멈출 시점을 정하는게 더 효과적으로 보임
-    - best model saving (Not in the original paper)
