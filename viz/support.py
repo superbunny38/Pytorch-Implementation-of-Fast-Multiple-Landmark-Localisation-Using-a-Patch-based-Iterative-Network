@@ -57,20 +57,17 @@ def print_info(config):
 
 def save_loss_plot(save_losses, trace_from = 5):
     
-    plt.subplot(131)
-    plt.title("Total Loss")
-    plt.plot(save_losses['save_loss'][trace_from:])
-    plt.xlabel("Iterations")
-    plt.subplot(132)
-    plt.title("Classification Loss")
-    plt.plot(save_losses['save_loss_c'][trace_from:])
-    plt.xlabel("Iterations")
-    plt.subplot(133)
-    plt.title("Regression Loss")
-    plt.plot(save_losses['save_loss_r'][trace_from:])
-    plt.xlabel("Iterations")
+    for loss_type, loss_list in save_losses.items():
+        plt.title(loss_type)
+        plt.plot(loss_list[trace_from:])    
+        plt.show()
     plt.savefig("trace_loss.png")
-    
+
+def save_single_loss_plot(loss_list,trace_from = 5):
+    plt.title("Loss")
+    plt.plot(loss_list[trace_from:])
+    plt.xlabel("epochs")
+    plt.savefig("loss_ae.png")
     
 def print_config_inference(config):
     print("\n\n\n\n========= Configuration Info. =========")
@@ -144,3 +141,22 @@ def write_loss(losses, log_dir, dt_string):
     with open(os.path.join(log_dir, f"train_loss_{dt_string}.txt"), "a") as f:
         df_string = df.to_string()
         f.write(df_string)
+        
+def get_the_best_ae_ckpt(ckpt_dir = "./ckpt/models/"):
+    ckpt_list = os.listdir(ckpt_dir)
+    
+    losses = []
+    ae_list = []
+    for file_name in ckpt_list:
+        if 'new_history' in file_name:
+            ae_list.append(file_name)
+    
+    for file_name in ae_list:
+        loss_str = file_name.split("history")[-1].split(".")[0]
+        loss_str = loss_str.replace("_",".")
+        losses.append(float(loss_str))
+    
+    min_loss = min(losses)
+    ret_file_name = "new_history" + str(min_loss).replace(".", "_") + ".pt"
+    ret_ckpt_dir = os.path.join(ckpt_dir, ret_file_name)
+    return ret_ckpt_dir

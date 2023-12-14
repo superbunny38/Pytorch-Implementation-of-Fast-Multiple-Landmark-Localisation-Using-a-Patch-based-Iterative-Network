@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import autoencoder, input_data, network, patch, train_one_step
+from utils import input_data, network, patch, train_one_step
 from viz import support
 global args
 from tqdm import tqdm
@@ -24,8 +24,8 @@ parser = argparse.ArgumentParser(description='Argparse')
 
 #PIN
 parser.add_argument('--batch_size', type=int, default=64, help='Batch size')
-parser.add_argument('--alpha', type=float, default=0.5, help='Weighting given to the loss')
-parser.add_argument('--learning_rate', type=float, default=0.001, help='Baseline learning rate')
+parser.add_argument('--alpha', type=float, default=0.2, help='Weighting given to the loss (weight on cls)')
+parser.add_argument('--learning_rate', type=float, default=0.0001, help='Baseline learning rate')
 parser.add_argument('--box_size', type=float, default=101, help='Patch size (should be odd number)')
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmark points')
 parser.add_argument('--drop_out', type=float, default=0.5, help='Dropout rate')
@@ -40,6 +40,8 @@ parser.add_argument('--print_freq', type=int, default=1000, help='How often to p
 parser.add_argument('--save_model', type =bool, default=True, help='Whether to save the trained model')
 parser.add_argument('--save_log',type=bool, default=False, help='Whether to save the experiment log')
 parser.add_argument('--reg_loss_type', type=str, default='mse', help='The type of regression loss')
+parser.add_argument('--backbone_resnet',type = bool, default = False, help='Whether to use resnet backbone (Takes a lot of time)')
+parser.add_argument('--is_ctp',type = bool, default = True, help='Whether to use CTP dataset')
 
 ##Autoencoder
 parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
@@ -49,11 +51,11 @@ args = parser.parse_args()
 class Config(object):
     """Training configurations."""
     # File paths
-    data_dir = './data/Images'
-    label_dir = './data/Landmarks'
-    train_list_file = './data/list_train.txt'
+    data_dir = './data/Images_CTP'
+    label_dir = './data/Landmarks_CTP'
+    train_list_file = './data/list_train_CTP.txt'
     assert os.path.exists(train_list_file) == True, print("train_list_file does not exist")    
-    test_list_file = './data/list_test.txt'
+    test_list_file = './data/list_test_CTP.txt'
     assert os.path.exists(test_list_file) == True, print("test_list_file does not exist")
     log_dir = './logs'
     save_model_dir = './ckpt/models/'
@@ -85,12 +87,14 @@ class Config(object):
     save_model = args.save_model
     save_log = args.save_log
     reg_loss_type = args.reg_loss_type
+    backbone_resnet = args.backbone_resnet
+    is_ctp = args.is_ctp
 
 def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs, random_init = True):
     '''
     Args:
         batch_size: Number of examples in a mini-batch
-        images: List of images
+        images: List of images (n_images, 512, 512, 23, 1) for ctp dataset
         labels: List of labels (=landmarks)
         config: Training configurations
         num_actions: Number of classification outputs
@@ -106,6 +110,7 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
         
     '''
     img_count = len(images)
+    # print("number of images: {}".format(img_count))
     # print("initial")
     # print(np.array(images).shape)
     # print("labels:",labels)
@@ -168,7 +173,7 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
     assert patches.shape[1] == config.box_size, print("wrong shape of patches (2nd dim)")
     assert dbs.shape[0] == config.batch_size, print("wrong shape of dbs (1st dim)")
     assert dbs.shape[1] == num_regression_output, print("wrong shape of db (2nd dim)")
-    return patches, actions, dbs, bs
+    return patches, actions, dbs, bs, bs_gt
 
 def main():
     config = Config()
@@ -194,7 +199,10 @@ def main():
     models = dict()
     if config.landmark_count > 3:
         shape_model = autoencoder.load_model(config.landmark_count*3, config.device)
-    model = network.cnn(num_cnn_output_c, num_cnn_output_r)
+    if config.backbone_resnet:
+        model = network.ResNet18(num_cnn_output_c, num_cnn_output_r)
+    else:
+        model = network.cnn(num_cnn_output_c, num_cnn_output_r)
     model.to(config.device)
     if config.landmark_count > 3:
         shape_model.to(config.device)
@@ -205,6 +213,8 @@ def main():
     print(">>successful!")
     print("\n\nLoading data...")
     train_dataset, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
+    # print(train_dataset.images[0].shape)
+    print(f"Number of training images: {len(train_dataset.images)}")
     print(">>successful!")
     
     config.gt_label_cord = train_dataset.labels
@@ -236,11 +246,12 @@ def main():
     print("\n\nTraining pairs...")
     save_loss_c = []
     save_loss_r = []
+    save_loss_d = []
     save_loss = []
     
     for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
         #generate training pairs via patch extraction
-        patches, actions, dbs, bs = get_train_pairs(step_i,config.batch_size,
+        patches, actions, dbs, bs, bs_gt = get_train_pairs(step_i,config.batch_size,
                                                     train_dataset.images,
                                                     train_dataset.labels,
                                                     config,
@@ -250,19 +261,20 @@ def main():
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
-        models['model'], loss_c, loss_r, loss, bs = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs)
+        models['model'], loss_c, loss_r, loss, bs, loss_d = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs, bs_gt)
         
         if step_i%config.print_freq == 0:
-            print("step_i: {} || loss_c: {}, loss_r: {}, loss: {}".format(step_i, loss_c, loss_r, loss))
+            print("step_i: {} || loss_c: {}, loss_r: {}, loss_d:{}, total loss: {}".format(step_i, loss_c, loss_r, loss_d, loss))
             save_loss_c.append(loss_c)
             save_loss_r.append(loss_r)
+            save_loss_d.append(loss_d)
             save_loss.append(loss)
             
     
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
-    losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r, "save_loss": save_loss}
+    losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r, "save_loss_d":save_loss_d, "save_loss": save_loss}
     elapsed_time = time.time() - start_time
     print("Finished Training! Elapsed time:",str(timedelta(seconds= elapsed_time)))
     

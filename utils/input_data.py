@@ -51,7 +51,7 @@ def extract_image(filename):
     pix_dim = np.array(img.header.get_zooms())
     return data, pix_dim
 
-def extract_label(filename):
+def extract_label(filename, is_ctp = True):
     """Extract the labels (landmark coordinates) into a 2D float64 numpy array.
 
     Args:
@@ -84,7 +84,7 @@ def get_file_list(txt_file):
     return filenames
 
 
-def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant = []):
+def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, landmark_unwant = [], is_ctp = True):
     #원래는 여기서 data compression이 진행됨..
     
     '''
@@ -109,7 +109,11 @@ def extract_all_image_and_label(file_list, data_dir, label_dir, landmark_count, 
         #load image
         img, pix_dim[i] = extract_image(os.path.join(data_dir, file_name+'.nii.gz'))
         #load landmarks
-        label = extract_label(os.path.join(label_dir, file_name+'_ps.txt'))
+        if is_ctp:
+            label_file_name = file_name.split("Stripped")[0][:-1]
+            label = extract_label(os.path.join(label_dir, label_file_name+'.txt'))
+        else:
+            label = extract_label(os.path.join(label_dir, file_name+'_ps.txt'))
         
         #Store extracted data
         # print("img shape: {}".format(img.shape))

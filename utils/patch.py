@@ -1,7 +1,7 @@
 #entire code file brought from the original repo: https://github.com/yuanwei1989/landmark-detection
 
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 def extract_patch(image, xc, yc, box_r):
     """Extract a patch from image given the centre (xc,yc) of patch and the radius of patch (box_size).
@@ -33,6 +33,7 @@ def extract_patch(image, xc, yc, box_r):
     x_end_pad = 0
     y_start_pad = 0
     y_end_pad = 0
+    
     if (x_end<=0 or x_start>=max_x or y_end<=0 or y_start>=max_y):
         return np.zeros((box_r*2+1, box_r*2+1, image.shape[2]))
     if x_start < 0:
@@ -114,4 +115,18 @@ def extract_patch_all_landmarks(image, landmarks, box_r):
     for i in range(landmarks.shape[0]):
         patch = extract_patch_all_planes(image, landmarks[i, 0], landmarks[i, 1], landmarks[i, 2], box_r)
         patches = np.concatenate((patches, patch), axis=2)
-    return patches
+    return patches#[box_size, box_size, 3*num_landmarks]
+
+
+def viz_patches(step_idx, patches, landmarks):
+    for i in range(landmarks.shape[0]):
+        plt.subplot(131)
+        plt.title(f"landmark {i+1} x({str(landmarks[i,0].item())[:4]})")
+        plt.imshow(patches[:, :, i*3])
+        plt.subplot(132)
+        plt.title(f"landmark {i+1} y({str(landmarks[i,1].item())[:4]})")
+        plt.imshow(patches[:,:,i*3+1])
+        plt.subplot(133)
+        plt.title(f"landmark {i+1} z({str(landmarks[i,2].item())[:4]})")
+        plt.imshow(patches[:,:,i*3+2])
+        plt.savefig(f"C:\\Users\\Neurophet\\Desktop\\2023\\Pytorch-Implementation-of-Fast-Multiple-Landmark-Localisation-Using-a-Patch-based-Iterative-Network\\results\\patch_viz\\patches_for_landmark_{i+1}_step{step_idx}.png")

@@ -2,7 +2,7 @@
 import os
 import numpy as np
 import argparse
-from utils import input_data, network, patch, train_one_step, autoencoder
+from utils import input_data, network, patch, train_one_step, autoencoder, new
 from viz import support
 global args
 from tqdm import tqdm
@@ -22,32 +22,35 @@ import torch.nn.functional as F
 parser = argparse.ArgumentParser(description='Argparse')
 
 #PIN
-parser.add_argument('--batch_size', type=int, default=2, help='Batch size')
+parser.add_argument('--batch_size', type=int, default=1, help='Batch size')
 parser.add_argument('--alpha', type=float, default=0.5, help='Weighting given to the loss (weight on cls)')
-parser.add_argument('--learning_rate', type=float, default=0.0005, help='Baseline learning rate')
-parser.add_argument('--box_size', type=int, default=101, help='Patch size (should be odd number)')
+parser.add_argument('--learning_rate', type=float, default=0.005, help='Baseline learning rate')
+parser.add_argument('--box_size', type=int, default=101, help='Patch size (should be odd number) (original: 101)')
 parser.add_argument('--landmark_count', type=int, default=2, help='Number of landmark points')
 parser.add_argument('--drop_out', type=float, default=0.4, help='Dropout rate')
 parser.add_argument('--print_config', type=bool, default=False, help='Whether to print out the configuration')
 parser.add_argument('--dimension', type=int, default=3, help='Dimensionality of the input data')
 parser.add_argument('--device_id', type=int, default=0, help='Device ID')
-parser.add_argument('--max_steps', type=int, default=100000, help='Maximum number of steps to train')
+parser.add_argument('--max_steps', type=int, default=1000000, help='Maximum number of steps to train')
 parser.add_argument('--write_log', type=bool, default=True, help='Whether to write the experiment log')
 parser.add_argument('--get_info', type=bool, default=False, help='Whether to get the information of the code')
 parser.add_argument('--save_viz', type=bool, default=True, help='Whether to save the visualization')
-parser.add_argument('--print_freq', type=int, default=1000, help='How often to print out the loss')
+parser.add_argument('--print_freq', type=int, default=50, help='How often to print out the loss')
 parser.add_argument('--save_model', type =bool, default=True, help='Whether to save the trained model')
 parser.add_argument('--save_log',type=bool, default=False, help='Whether to save the experiment log')
 parser.add_argument('--reg_loss_type', type=str, default='mse', help='The type of regression loss')
-parser.add_argument('--backbone_resnet',type = bool, default = True, help='Whether to use resnet backbone (Takes a lot of time)')
+parser.add_argument('--backbone_resnet',type = bool, default = False, help='Whether to use resnet backbone (Takes a lot of time)')
 parser.add_argument('--is_ctp',type = bool, default = True, help='Whether to use CTP dataset')
 parser.add_argument('--num_shape_params', type = int, default = 6, help='Number of shape parameters')
+parser.add_argument('--optimizer_type', type = str, default = 'adam', help='The type of optimizer')
+# parser.add_argument('--bounds',type = int, default = 20, help )
 
 ##Autoencoder
-parser.add_argument('--learning_rate_ae', type=float, default=0.001, help='Learning rate for autoencoder')
+parser.add_argument('--learning_rate_ae', type=float, default=0.005, help='Learning rate for autoencoder')
 parser.add_argument('--use_best_shape_model', type=bool, default=True, help='Whether to use the best shape model')
 parser.add_argument('--reg_loss_type_ae', type=str, default='mse', help='The type of regression loss')
 parser.add_argument('--shape_model_dir', type=str, default='C:\\Users\\Neurophet\\Desktop\\2023\\Pytorch-Implementation-of-Fast-Multiple-Landmark-Localisation-Using-a-Patch-based-Iterative-Network\\ckpt\\models\\history1_28.pt', help='Directory to save the shape model')
+parser.add_argument('--train_ae', type=bool, default=True, help='Whether to train the autoencoder')
 args = parser.parse_args()
 
                     
@@ -64,8 +67,8 @@ class Config(object):
     if args.use_best_shape_model:
         shape_model_dir = support.get_the_best_ae_ckpt()
     else:
-        save_model_dir = args.shape_model_dir
-        
+        shape_model_dir = args.shape_model_dir
+    save_model_dir = "./ckpt/models/"
     # Shape model parameters
     shape_model_dir = support.get_the_best_ae_ckpt()
     eigvec_per = 0.995      # Percentage of eigenvectors to keep
@@ -97,8 +100,10 @@ class Config(object):
     reg_loss_type = args.reg_loss_type
     backbone_resnet = args.backbone_resnet
     is_ctp = args.is_ctp
+    optimizer_type = args.optimizer_type
+    train_ae = args.train_ae
 
-def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs, random_init = True):
+def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num_regression_output, models, bs, criterions, optimizers, random_init = True):
     '''
     Args:
         batch_size: Number of examples in a mini-batch
@@ -120,7 +125,7 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
     img_count = len(images)
     
     bs_gt = autoencoder.landmarks2b(torch.from_numpy(labels.reshape(-1,config.landmark_count*3)).to(config.device).float(), models['shape_model'], config)#shape_model_func.landmarks2b(labels, shape_model)
-        
+    
     num_landmarks = config.landmark_count
     box_r = int((config.box_size-1)/2)
     patches = np.zeros((batch_size, config.box_size, config.box_size, int(3*num_landmarks)), dtype=np.float32)
@@ -134,15 +139,28 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
     #Randomly sampled x from V
     #dGT = xGT - x
     if step_i == 0 or random_init:
-        bounds = config.sd*np.sqrt(config.landmark_count)
-        bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
+        # bounds = config.sd*np.sqrt(config.landmark_count)
+        # bs = np.random.rand(config.batch_size, num_regression_output) * 2*bounds - bounds
+        # print(config.img_shape)
+        x_size,y_size,z_size = config.img_shape[0],config.img_shape[1],config.img_shape[2]
+        x_bounds, y_bounds, z_bounds = 30,30,3
+        random_coords= []
+        for b_idx in range(config.batch_size):
+            random_coords_batch = []
+            for _ in range(config.landmark_count):
+                random_x, random_y, random_z = np.random.uniform(x_size//2-x_bounds,x_size//2+x_bounds),np.random.uniform(y_size//20-y_bounds,y_size//2+y_bounds),np.random.uniform(z_size//2-z_bounds,z_size//2+z_bounds)
+                random_coords_batch.append([random_x, random_y, random_z])
+            random_coords.append(random_coords_batch)
+        random_coords = np.array(random_coords).reshape(config.batch_size,-1)
+        bs = autoencoder.landmarks2b(torch.from_numpy(random_coords).float(), models['shape_model'], config)#shape_model_func.landmarks
         
     # Convert shape parameters to landmark
-    landmarks = autoencoder.b2landmarks(torch.from_numpy(bs).float().to(config.device), models['shape_model'], config)
+    random_coords_reconstructed = autoencoder.b2landmarks(bs, models['shape_model'], config)
+    landmarks_gt_reconstructed = autoencoder.b2landmarks(bs_gt, models['shape_model'], config)
     # print("\n\n\n\n\n\n\n\n\n\n\n\n")
     
-    # print("landmarks shape:{}".format(landmarks.shape))#[64,3]
-    
+    # print("landmarks reconstructed from bs by ae:{}".format(landmarks))#[64,3]
+    # print("ind:",ind)
     # print("\n\n\n\n\n\n\n\n\n\n\n\n")
     # Extract image patch
     # print("image size: {}".format(np.array(images).shape))
@@ -151,38 +169,34 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
         # print("len(patches): {}".format(len(patches)))
         # print("len(landmarks): {}".format(len(landmarks)))
         image = images[ind[i]]
-        patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)# <- 원래 코드: patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)
-    
+        patches[i] = patch.extract_patch_all_landmarks(image, random_coords_reconstructed[i], box_r)# <- 원래 코드: patches[i] = patch.extract_patch_all_landmarks(image, landmarks[i], box_r)
+        # patch.viz_patches(step_i, patches[i],random_coords_reconstructed[i])
+        
     #Regression values (distances between predicted and GT)    
-    dbs = bs - bs_gt.detach().cpu().numpy()[ind]
+    dbs = bs - bs_gt[ind]
 
     #Extract classification labels as a one-hot vector
-    max_db_ind = np.argmax(np.abs(dbs), axis = 1)
-    max_db = dbs[np.arange(dbs.shape[0]), max_db_ind]
-    is_positive = (max_db > 0.5)
-    actions_ind[is_positive] = max_db_ind[is_positive]*2
-    actions_ind[np.logical_not(is_positive)] = max_db_ind[np.logical_not(is_positive)]*2 + 1
-    # print("actions shape:", actions.shape)
-    # print("actions_ind:", actions_ind)
-    # print("actions_ind shape: {}".format(actions_ind.shape))
-    actions_ind = actions_ind.astype(int)
-    # print(actions_ind.dtype)
-    # print("actions:", actions)
-    # print(actions_ind.dtype)
-    # print(np.arange(config.batch_size))
-    actions[np.ix_(np.arange(config.batch_size), actions_ind)] = 1#original code: actions = actions[np.arange(config.batch_size), actions_ind] = 1
-    # print("\n\n\n\n\n\n\n\n\n\n\n")
-    # # print("shape of actions:",actions.shape) [54,30]
-    # print("\n\n\n\n\n\n\n\n\n\n\n")
-    #Shape assertions
+    actions, actions_ind = new.generate_actions_pytorch(dbs, config)
+    
+    if config.train_ae:
+        models['shape_model'].train()
+        optimizers['ae'].zero_grad()
+        criterion = criterions['ae'].to(config.device)
+        # print(landmarks_gt_reconstructed.size())
+        # print(torch.from_numpy(labels).size())
+        # print(random_coords_reconstructed.size())
+        # print(torch.from_numpy(random_coords).size())
+        loss_for_landmarks = criterion(landmarks_gt_reconstructed.to(config.device), torch.from_numpy(labels).to(config.device).float())
+        loss_for_random_coords = criterion(random_coords_reconstructed.to(config.device), torch.from_numpy(random_coords).reshape(-1,config.landmark_count,3).float().to(config.device))
+        loss_ae = loss_for_landmarks + loss_for_random_coords
+        loss_ae.backward(retain_graph=True)   
+        optimizers['optimizer'].step()
+    
     assert patches.shape[0] == config.batch_size, print("wrong shape of patches (1st dim)")
     assert patches.shape[1] == config.box_size, print("wrong shape of patches (2nd dim)")
     assert dbs.shape[0] == config.batch_size, print("wrong shape of dbs (1st dim)")
     assert dbs.shape[1] == num_regression_output, print("wrong shape of db (2nd dim)")
-    return patches, actions, dbs, bs, bs_gt[ind]
-
-
-
+    return patches, actions, dbs, bs, bs_gt[ind],loss_ae#actions == yc_, dbs == yr_
 
 
     """
@@ -198,9 +212,6 @@ def get_train_pairs(step_i, batch_size, images, labels, config, num_actions, num
     Shape of the imgSizeCNN in shape model
     (1, 3)
     """
-
-
-
 
 
 
@@ -226,15 +237,20 @@ def main():
     
     
     num_cnn_output_c, num_cnn_output_r = 2*config.num_shape_params, config.num_shape_params
-    # print("num_cnn_output_c: {}, num_cnn_output_r: {}".format(num_cnn_output_c, num_cnn_output_r))
-    #num_cnn_output_c: 3(axis)x2(pos/neg)xlandmark_count
-    #num_cnn_output_r: 3(axis)xlandmark_count
+    config.num_cnn_output_c,config.num_cnn_output_r = num_cnn_output_c,num_cnn_output_r
+    
     models = dict()
-    model = network.cnn(num_cnn_output_c, num_cnn_output_r)
-    model.to(config.device)
+    if config.backbone_resnet:
+        print("Resnet18 model loaded!")
+        model = network.ResNet18(num_cnn_output_c, num_cnn_output_r)
+        model.to(config.device)
+    else:
+        print("Baseline network loaded!")
+        model = network.cnn(num_cnn_output_c, num_cnn_output_r)
+        model.to(config.device)
     print("PIN loaded!")
     
-    shape_model = autoencoder.load_model(config)
+    shape_model = autoencoder.load_model(config).to(config.device)
     hist = torch.load(config.shape_model_dir)
     shape_model.load_state_dict(hist['model_w'])
     shape_model.to(config.device)
@@ -246,7 +262,8 @@ def main():
     
     print("\n\nLoading data...")
     train_dataset, test_dataset = input_data.read_data_sets(config.data_dir, config.label_dir, config.train_list_file, config.test_list_file, config.dimension, config.landmark_count, config.landmark_unwant)
-    # print(train_dataset.images[0].shape)
+    config.img_shape = train_dataset.images[0].shape
+    # print(config.img_shape)
     print(f"Number of training images: {len(train_dataset.images)}")
     print(">>successful!")
     
@@ -260,53 +277,64 @@ def main():
     criterions = dict()
     criterions['cls'] = softmax_cross_entropy_with_logits
     if config.reg_loss_type == 'mse':
+        print("MSE used for regression loss")
         criterions['reg'] = nn.MSELoss().to(config.device)
+    elif config.reg_loss_type == 'l1':
+        print("L1 loss used for regression loss")
+        criterions['reg'] = nn.L1Loss().to(config.device)
     
-    if config.landmark_count > 3:
-        criterions['autoencoder'] = nn.BCELoss()
+    if config.train_ae:
+        criterions['ae'] = nn.MSELoss()
         #Define Loss for autoencoder
     
     #Define Optimizer
     optimizers = dict()
-    optimizer = torch.optim.Adam(models['model'].parameters(), lr = config.learning_rate)
+    if config.optimizer_type == 'adam':
+        print("Adam optimizer for training PIN!")
+        optimizer = torch.optim.Adam(models['model'].parameters(), lr = config.learning_rate)
+    elif config.optimizer_type =='sgd':
+        print("SGD optimizer for training PIN!")
+        optimizer = torch.optim.SGD(models['model'].parameters(), lr = config.learning_rate)
     optimizers['optimizer'] = optimizer
     
-    if config.landmark_count > 3:
-        optimizer_autoencoder = torch.optim.Adam(shape_model.parameters(), lr = config.learning_rate_ae)
-        optimizers['optimizer_autoencoder'] = optimizer_autoencoder
+    if config.train_ae:
+        optimizer_autoencoder = torch.optim.Adam(models['shape_model'].parameters(), lr = config.learning_rate_ae)
+        optimizers['ae'] = optimizer_autoencoder
     print(">>successful!")
     
     print("\n\nTraining pairs...")
     save_loss_c = []
     save_loss_r = []
     save_loss_d = []
+    save_loss_ae = []
     save_loss = []
     
     for step_i in tqdm(range(config.max_steps), desc='Training... (Patch extraction -> Train pairs)'):
-        #generate training pairs via patch extraction
-        patches, actions, dbs, bs, bs_gt = get_train_pairs(step_i,config.batch_size,
+        #patches, actions, dbs, bs, bs_gt[ind]
+        patches, actions, dbs, bs, bs_gt, loss_ae = get_train_pairs(step_i,config.batch_size,
                                                     train_dataset.images,
                                                     train_dataset.labels,
                                                     config,
                                                     num_cnn_output_c,
                                                     num_cnn_output_r,
-                                                    models, bs)
+                                                    models, bs, criterions, optimizers)
         
         #train the model with the generated training pairs
         #params: patches_train, actions_train, dbs_train, config, models
         models['model'], loss_c, loss_r, loss, bs = train_one_step.train_pairs(step_i, patches, actions, dbs, config, models, criterions, optimizers, bs, bs_gt)
         
         if step_i%config.print_freq == 0:
-            print("step_i: {} || loss_c: {}, loss_r: {}, total loss: {}".format(step_i, loss_c, loss_r, loss))
+            print("step_i: {} || loss_c: {}, loss_r: {}, total loss: {}  (loss_ae: {})".format(step_i, round(loss_c,2), round(loss_r,2), round(loss,2),round(loss_ae.item(),2)))
             save_loss_c.append(loss_c)
             save_loss_r.append(loss_r)
             # save_loss_d.append(loss_d)
+            save_loss_ae.append(loss_ae)
             save_loss.append(loss)
             
     #모든 타임프레임에 대해서 input을 받은 후에 최종 Loss에 도입해야 할듯
     #ex.) cord_1 = model(x), cord_2 = model(x),..., cord_30 = model(x)
     #Loss = loss(cord_1, cord_2,..., cord_30)
-    losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r,"save_loss": save_loss}
+    losses = {"save_loss_c": save_loss_c, "save_loss_r": save_loss_r,"save_loss_ae":save_loss_ae,"save_loss": save_loss}
     elapsed_time = time.time() - start_time
     print("Finished Training! Elapsed time:",str(timedelta(seconds= elapsed_time)))
     
@@ -323,7 +351,7 @@ def main():
         save_dict = dict()
         save_dict['model'] = models['model'].state_dict()
         save_dict['optimizer'] = optimizers['optimizer'].state_dict()
-        torch.save(save_dict, config.save_model_dir + dt_string + "_model.pth")
+        torch.save(save_dict, config.save_model_dir + dt_string + "_pin_model.pt")
     
 
 if __name__ == '__main__':

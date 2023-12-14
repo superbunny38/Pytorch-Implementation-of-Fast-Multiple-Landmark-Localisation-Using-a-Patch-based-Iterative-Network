@@ -4,6 +4,98 @@
 
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
+
+
+class ResidualBlock(nn.Module):
+    def __init__(self, inchannel, outchannel, stride=1):
+        super(ResidualBlock, self).__init__()
+        self.left = nn.Sequential(
+            nn.Conv2d(inchannel, outchannel, kernel_size=3, stride=stride, padding=1, bias=False),
+            nn.BatchNorm2d(outchannel),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(outchannel, outchannel, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(outchannel)
+        )
+        self.shortcut = nn.Sequential()
+        if stride != 1 or inchannel != outchannel:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(inchannel, outchannel, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(outchannel)
+            )
+            
+    def forward(self, x):
+        out = self.left(x)
+        out = out + self.shortcut(x)
+        out = F.relu(out)
+        
+        return out
+
+
+class ResNet_cnn(nn.Module):
+    def __init__(self, ResidualBlock, num_output_c, num_output_r, prob = 0.5):
+        super(ResNet_cnn, self).__init__()
+        self.num_landmarks = int(num_output_c/(2*3))
+        self.inchannel = 64
+        self.keep_prob = prob
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3*self.num_landmarks, 64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+        self.layer1 = self.make_layer(ResidualBlock, 64, 2, stride=1)
+        self.layer2 = self.make_layer(ResidualBlock, 128, 2, stride=2)
+        self.layer3 = self.make_layer(ResidualBlock, 256, 2, stride=2)        
+        self.layer4 = self.make_layer(ResidualBlock, 512, 2, stride=2) 
+        
+        ############ CLASSIFICATION LAYER #############
+        self.cls = nn.Sequential(
+            nn.Linear(in_features=512, out_features=1024),
+            nn.ReLU(inplace=True),
+            nn.Linear(in_features=1024, out_features=1024),
+            nn.ReLU(inplace=True),
+            nn.Linear(in_features=1024, out_features=num_output_c)
+        )
+        
+        ############ REGRESSION LAYER #############
+        self.reg = nn.Sequential(
+            nn.Linear(in_features=512, out_features=1024),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=1024, out_features=2048),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=2048, out_features=1024),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=1024, out_features=num_output_r)
+        )      
+ 
+    def make_layer(self, block, channels, num_blocks, stride):
+        strides = [stride] + [1] * (num_blocks - 1)
+        layers = []
+        for stride in strides:
+            layers.append(block(self.inchannel, channels, stride))
+            self.inchannel = channels
+        return nn.Sequential(*layers)
+    
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = nn.AdaptiveAvgPool2d((1,1))(out)#F.avg_pool2d(out,4)
+        out = torch.flatten(out, start_dim=1)
+
+        yc = self.cls(out)
+        yr = self.reg(out)
+        
+        return yc, yr
+
+
+def ResNet18(num_cnn_output_c, num_cnn_output_r):
+    return ResNet_cnn(ResidualBlock, num_cnn_output_c, num_cnn_output_r)
 
 
 class cnn(nn.Module):
@@ -12,7 +104,7 @@ class cnn(nn.Module):
         self.keep_prob = prob
         self.num_landmarks = int(num_output_c/(2*3))
         self.conv1_1_pool = nn.Sequential(
-            nn.Conv2d(in_channels=3*self.num_landmarks, out_channels=32, kernel_size=3, stride=1),
+            nn.Conv2d(in_channels=6, out_channels=32, kernel_size=3, stride=1),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(inplace=True)
         )
@@ -48,16 +140,22 @@ class cnn(nn.Module):
         
         ############ REGRESSION LAYER #############
         self.reg = nn.Sequential(
-            nn.Linear(in_features=512, out_features=1024),
-            nn.ReLU(inplace=True),
-            nn.Dropout2d(self.keep_prob),
-            nn.Linear(in_features=1024, out_features=2048),
-            nn.ReLU(inplace=True),
+            nn.Linear(in_features=512, out_features=2048),
+            nn.LeakyReLU(inplace=True),
             nn.Dropout2d(self.keep_prob),
             nn.Linear(in_features=2048, out_features=1024),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Dropout2d(self.keep_prob),
-            nn.Linear(in_features=1024, out_features=num_output_r)
+            nn.Linear(in_features=1024, out_features=512),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=512, out_features=128),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=128, out_features=64),
+            nn.LeakyReLU(inplace=True),
+            nn.Dropout2d(self.keep_prob),
+            nn.Linear(in_features=64, out_features=num_output_r)
         )
         
         
