@@ -55,20 +55,39 @@ def print_info(config):
     print("================================")
     
 
-def save_loss_plot(save_losses, trace_from = 5):
-    
+def save_loss_plot_(save_losses, trace_from = 10):
+    plt.title(loss_type)
     for loss_type, loss_list in save_losses.items():
-        plt.title(loss_type)
+        
         plt.plot(loss_list[trace_from:])    
-        plt.show()
+        # plt.show()
+        plt.legend()
     plt.savefig("trace_loss.png")
+    
+    
+from matplotlib.pyplot import cm
+import numpy as np
+def save_loss_plot(save_losses, trace_from = 5):
+    color=iter(cm.rainbow(np.linspace(0,1,len(save_losses))))
+    plt.title("Train Losses")
+    for key, c in zip(save_losses, color):
+        plt.plot(save_losses[key], c=c, label = key)
+        # for idx, item in enumerate(save_losses[key]):
+        #     if idx == 0:
+        #         plt.plot(item[trace_from:], c=c, label=key)
+        #     else:
+        #         plt.plot(item[trace_from:], c=c)
+
+    plt.legend()
+    plt.savefig("trace_loss.png")
+
 
 def save_single_loss_plot(loss_list,trace_from = 5):
     plt.title("Loss")
     plt.plot(loss_list[trace_from:])
     plt.xlabel("epochs")
     plt.savefig("loss_ae.png")
-    
+
 def print_config_inference(config):
     print("\n\n\n\n========= Configuration Info. =========")
     print("\n=======File paths=======")
